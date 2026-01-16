@@ -1,0 +1,205 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getSessionFromRequest } from "../../lib/auth";
+import { prisma } from "../../lib/prisma";
+import { ManageBooksPage } from "../../components/ManageBooksPage";
+import { formatAuthors } from "../../lib/book-utils";
+
+const result = await getSessionFromRequest(Astro.request);
+if (!result?.user) {
+  return Astro.redirect("/login");
+}
+const session = result;
+
+const books = await prisma.book.findMany({
+  where: { 
+    createdBy: session.user.id,
+    isPublished: true 
+  },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+});
+---
+
+<Layout title="Manage Books - MLCompanion">
+  <div class="page">
+    <header class="hero">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1>Manage Books</h1>
+          <p class="muted">Add, edit, and organize your book library</p>
+        </div>
+        <button id="add-book-btn" class="button">+ Add Book</button>
+      </div>
+    </header>
+
+    <section>
+      {books.length === 0 ? (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <p class="muted">No books yet. Click "Add Book" to get started!</p>
+        </div>
+      ) : (
+        <div class="video-admin-list">
+          {books.map((book) => (
+            <div class="panel" data-book-id={book.id} style="padding: 0.75rem;">
+              <div style="display: flex; gap: 1rem; align-items: start;">
+                {/* Book Cover */}
+                <div style="flex-shrink: 0; position: relative;">
+                  {book.thumbnailUrl ? (
+                    <img
+                      src={book.thumbnailUrl}
+                      alt={book.title}
+                      style={{
+                        width: "120px",
+                        height: "180px",
+                        objectFit: "cover",
+                        borderRadius: "8px",
+                        background: "#222",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "120px",
+                        height: "180px",
+                        borderRadius: "8px",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.8rem",
+                        padding: "1rem",
+                        textAlign: "center",
+                        fontWeight: 600,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      {book.title.substring(0, 30)}
+                    </div>
+                  )}
+                  {book.pageCount && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        bottom: "4px",
+                        right: "4px",
+                        background: "rgba(0,0,0,0.8)",
+                        color: "white",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        fontSize: "0.7rem",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {book.pageCount}p
+                    </span>
+                  )}
+                </div>
+
+                {/* Book info */}
+                <div style="flex: 1; min-width: 0;">
+                  <h3 style="margin: 0 0 0.25rem 0; font-size: 1rem;">{book.title}</h3>
+                  {book.authors.length > 0 && (
+                    <p class="muted" style="margin: 0 0 0.25rem 0; font-size: 0.9rem; color: var(--accent-color); font-weight: 500;">
+                      {formatAuthors(book.authors)}
+                    </p>
+                  )}
+                  {book.publisher && (
+                    <p class="muted" style="margin: 0 0 0.25rem 0; font-size: 0.85rem;">
+                      {book.publisher}{book.publishedDate && ` • ${book.publishedDate}`}
+                    </p>
+                  )}
+                  <p class="muted" style="margin: 0 0 0.5rem 0; font-size: 0.85rem; line-height: 1.4;">
+                    {book.description.length > 150
+                      ? book.description.slice(0, 147) + "..."
+                      : book.description}
+                  </p>
+                  {book.tags.length > 0 && (
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                      {book.tags.slice(0, 4).map((tag: string) => (
+                        <a
+                          href={`/books/tag/${tag.toLowerCase().replace(/\\s+/g, "-")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: "0.7rem",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            background: "rgba(156, 92, 46, 0.12)",
+                            color: "var(--accent-color)",
+                            textDecoration: "none",
+                          }}
+                        >
+                          {tag}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                  <button class="button button-sm edit-btn" data-book-id={book.id}>Edit</button>
+                  <button class="button button-sm button-danger delete-btn" data-book-id={book.id}>Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <ManageBooksPage client:load books={books} />
+  </div>
+
+  <script>
+    // Add book button
+    document.getElementById("add-book-btn")?.addEventListener("click", () => {
+      if ((window as any).openAddBookModal) {
+        (window as any).openAddBookModal();
+      }
+    });
+
+    // Edit buttons
+    document.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const bookId = (e.target as HTMLElement).dataset.bookId;
+        if ((window as any).openEditBookModal && bookId) {
+          (window as any).openEditBookModal(bookId);
+        }
+      });
+    });
+
+    // Delete buttons
+    document.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const bookId = (e.target as HTMLElement).dataset.bookId;
+        console.log("[DELETE] Attempting to delete book:", bookId);
+        
+        if (confirm("Are you sure you want to delete this book?")) {
+          try {
+            const response = await fetch(`/api/books/${bookId}`, { 
+              method: "DELETE",
+              credentials: "include"
+            });
+            
+            console.log("[DELETE] Response status:", response.status);
+            
+            if (response.ok) {
+              console.log("[DELETE] Success, reloading...");
+              location.reload();
+            } else {
+              const data = await response.json().catch(() => ({}));
+              console.error("[DELETE] Failed:", data);
+              alert(`Failed to delete book: ${data.error || "Unknown error"}`);
+            }
+          } catch (err) {
+            console.error("[DELETE] Error:", err);
+            alert("Failed to delete book. Please try again.");
+          }
+        }
+      });
+    });
+  </script>
+</Layout>

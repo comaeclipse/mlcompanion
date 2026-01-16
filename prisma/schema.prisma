@@ -23,6 +23,8 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  videos        Video[]
+  books         Book[]
 }
 
 model Account {
@@ -68,4 +70,61 @@ model Verification {
   identifier String
 
   @@index([identifier])
+}
+
+model Video {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  title        String
+  description  String   @db.Text
+  url          String
+  thumbnailUrl String?
+  duration     String?
+  channelName  String?
+  publishedAt  DateTime?
+
+  tags        String[]
+  category    String?
+  order       Int      @default(0)
+  isPublished Boolean  @default(true)
+
+  createdBy   String
+  creator     User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([isPublished])
+}
+
+model Book {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  title           String
+  description     String   @db.Text
+  isbn            String?
+  isbn13          String?
+  authors         String[]
+  publisher       String?
+  publishedDate   String?
+  thumbnailUrl    String?
+  pageCount       Int?
+  categories      String[]
+  language        String?
+  previewLink     String?
+  infoLink        String?
+
+  tags            String[]
+  order           Int      @default(0)
+  isPublished     Boolean  @default(true)
+
+  createdBy       String
+  creator         User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([isPublished])
+  @@index([isbn])
+  @@index([isbn13])
 }

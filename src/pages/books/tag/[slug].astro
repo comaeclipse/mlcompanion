@@ -1,0 +1,63 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { BookLibrary } from "../../../components/BookLibrary";
+import { prisma } from "../../../lib/prisma";
+import { unslugifyTag } from "../../../lib/tag-utils";
+
+const { slug } = Astro.params;
+const tagName = unslugifyTag(slug || "");
+
+// Find books with this tag (case-insensitive)
+const books = await prisma.book.findMany({
+  where: { 
+    isPublished: true,
+    tags: {
+      hasSome: [tagName]
+    }
+  },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+});
+
+// If no exact match, try case-insensitive search
+const allBooks = books.length === 0 
+  ? await prisma.book.findMany({
+      where: { isPublished: true },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+    })
+  : [];
+
+const matchedBooks = books.length === 0
+  ? allBooks.filter(b => 
+      b.tags.some(t => t.toLowerCase() === tagName.toLowerCase())
+    )
+  : books;
+---
+
+<Layout title={`${tagName} - Books - MLCompanion`}>
+  <div class="page">
+    <header class="hero">
+      <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <p class="eyebrow">Tag</p>
+          <h1 style="margin: 0.5rem 0;">{tagName}</h1>
+          <p class="muted" style="margin: 0;">
+            {matchedBooks.length} {matchedBooks.length === 1 ? "book" : "books"}
+          </p>
+        </div>
+        <a href="/books" class="button" style="text-decoration: none;">
+          ← All Books
+        </a>
+      </div>
+    </header>
+
+    <section style="margin-top: 1.5rem;">
+      {matchedBooks.length === 0 ? (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <p class="muted">No books found with this tag.</p>
+        </div>
+      ) : (
+        <BookLibrary client:load books={matchedBooks} />
+      )}
+    </section>
+  </div>
+</Layout>
