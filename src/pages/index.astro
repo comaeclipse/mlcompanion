@@ -1,11 +1,181 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Learning Hub - Socialism + Marxism">
+  <div class="page">
+    <header class="hero">
+      <p class="eyebrow">Learning Hub</p>
+      <nav class="menu" aria-label="Primary">
+        <a href="#learning-paths">Learning Paths</a>
+        <a href="#video-library">Video Library</a>
+        <a href="#study-guides">Study Guides</a>
+        <a href="#glossary">Glossary</a>
+      </nav>
+      <h1>Socialism, Marxism, and Political Economy</h1>
+      <p class="subhead">
+        A curated hub for learning theory, history, and debates. Start with a clear path,
+        explore tagged videos, and track your progress over time.
+      </p>
+      <div class="hero-meta">
+        <span>Organized by topic</span>
+        <span>Tagged media</span>
+        <span>Progress-friendly</span>
+      </div>
+    </header>
+
+    <section class="grid" id="learning-paths">
+      <div class="panel">
+        <h2>Learning Paths</h2>
+        <p class="lede">
+          Pick a path based on your current level. Each path blends short explainers,
+          longer lectures, and guided reading.
+        </p>
+
+        <div class="path-grid">
+          <article class="path-card">
+            <p class="pill">Start Here</p>
+            <h3>Foundations of Socialism</h3>
+            <p>Basic concepts, historical origins, and key debates.</p>
+            <ul class="mini-list">
+              <li>What is socialism?</li>
+              <li>Capitalism vs. socialism</li>
+              <li>Early socialist movements</li>
+            </ul>
+          </article>
+          <article class="path-card">
+            <p class="pill">Core Theory</p>
+            <h3>Marxism in Depth</h3>
+            <p>Marx, Engels, historical materialism, and class analysis.</p>
+            <ul class="mini-list">
+              <li>Historical materialism</li>
+              <li>Class and exploitation</li>
+              <li>Value and surplus value</li>
+            </ul>
+          </article>
+          <article class="path-card">
+            <p class="pill">Applied</p>
+            <h3>Political Economy</h3>
+            <p>Markets, crises, imperialism, and contemporary analysis.</p>
+            <ul class="mini-list">
+              <li>Capital accumulation</li>
+              <li>Crises and contradictions</li>
+              <li>Global political economy</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+
+      <aside class="panel" id="study-guides">
+        <h2>Study Guides</h2>
+        <div class="guide">
+          <h3>Weekly Cadence</h3>
+          <p>3 short videos + 1 longer lecture + reading notes.</p>
+          <p class="tags">Focus: consistency, note-taking</p>
+        </div>
+        <div class="guide">
+          <h3>Critical Questions</h3>
+          <p>What problem is the author solving? What changes historically?</p>
+          <p class="tags">Focus: analysis, evidence</p>
+        </div>
+        <div class="panel-block">
+          <h3>Starter Reading Order</h3>
+          <ul>
+            <li>The Communist Manifesto</li>
+            <li>Wage Labour and Capital</li>
+            <li>Socialism: Utopian and Scientific</li>
+            <li>Capital (Vol. 1) selections</li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+
+    <section class="grid" id="video-library">
+      <div class="panel">
+        <h2>Video Library</h2>
+        <p class="lede">
+          Add YouTube links here, then tag them by topic. The tags below are a starting
+          taxonomy to keep things searchable.
+        </p>
+
+        <div class="tag-cloud">
+          <span class="badge">intro</span>
+          <span class="badge">history</span>
+          <span class="badge">marx</span>
+          <span class="badge">engels</span>
+          <span class="badge">political economy</span>
+          <span class="badge">imperialism</span>
+          <span class="badge">debate</span>
+          <span class="badge">contemporary</span>
+        </div>
+
+        <div class="resource-list">
+          <article class="resource">
+            <div class="resource-top">
+              <h3>Placeholder Video Title</h3>
+              <div class="resource-tags">
+                <span>intro</span>
+                <span>history</span>
+              </div>
+            </div>
+            <p>Short note on why the video matters or how it fits a path.</p>
+            <p class="resource-link">Link: https://www.youtube.com/</p>
+          </article>
+          <article class="resource">
+            <div class="resource-top">
+              <h3>Placeholder Lecture Title</h3>
+              <div class="resource-tags">
+                <span>marx</span>
+                <span>political economy</span>
+              </div>
+            </div>
+            <p>Focus on theory. Add timestamps for key concepts.</p>
+            <p class="resource-link">Link: https://www.youtube.com/</p>
+          </article>
+          <article class="resource">
+            <div class="resource-top">
+              <h3>Placeholder Debate or Interview</h3>
+              <div class="resource-tags">
+                <span>debate</span>
+                <span>contemporary</span>
+              </div>
+            </div>
+            <p>Notes on perspectives and counter-arguments.</p>
+            <p class="resource-link">Link: https://www.youtube.com/</p>
+          </article>
+        </div>
+      </div>
+
+      <aside class="panel" id="glossary">
+        <h2>Glossary</h2>
+        <div class="concepts">
+          <details open>
+            <summary>Historical Materialism</summary>
+            <div class="content">
+              <p>Explains how material conditions shape social structures and ideas.</p>
+              <p class="tags">Theme: method</p>
+            </div>
+          </details>
+          <details>
+            <summary>Class Struggle</summary>
+            <div class="content">
+              <p>Conflict between classes rooted in ownership and labor relations.</p>
+              <p class="tags">Theme: conflict</p>
+            </div>
+          </details>
+          <details>
+            <summary>Surplus Value</summary>
+            <div class="content">
+              <p>Value created by labor beyond wages, central to Marxist analysis.</p>
+              <p class="tags">Theme: economy</p>
+            </div>
+          </details>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <p>Starter layout inspired by the Deng project theme. Expand sections as your hub grows.</p>
+    </footer>
+  </div>
 </Layout>
