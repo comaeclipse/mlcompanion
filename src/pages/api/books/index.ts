@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { prisma } from "../../../lib/prisma";
 import { requireAuth } from "../../../lib/auth-utils";
-import { parseISBN, validateISBN } from "../../../lib/book-utils";
+import { parseISBN, validateISBN, validateReadFreeLinks, validatePurchaseLinks, cleanPurchaseLinks } from "../../../lib/book-utils";
 
 export const GET: APIRoute = async () => {
   const books = await prisma.book.findMany({
@@ -36,6 +36,8 @@ export const POST: APIRoute = async (context) => {
     previewLink,
     infoLink,
     tags,
+    readFreeLinks,
+    purchaseLinks,
   } = body;
 
   if (!title) {
@@ -73,6 +75,29 @@ export const POST: APIRoute = async (context) => {
     }
   }
 
+  // Validate read free links
+  if (readFreeLinks) {
+    const validation = validateReadFreeLinks(readFreeLinks);
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Validate and clean purchase links
+  const cleanedPurchaseLinks = purchaseLinks ? cleanPurchaseLinks(purchaseLinks) : null;
+  if (purchaseLinks) {
+    const validation = validatePurchaseLinks(purchaseLinks);
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const book = await prisma.book.create({
     data: {
       title,
@@ -89,6 +114,8 @@ export const POST: APIRoute = async (context) => {
       previewLink,
       infoLink,
       tags: tags || [],
+      readFreeLinks: readFreeLinks || [],
+      purchaseLinks: cleanedPurchaseLinks,
       createdBy: authResult.user.id,
     },
   });

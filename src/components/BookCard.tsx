@@ -1,4 +1,5 @@
 import { formatAuthors } from "@/lib/book-utils";
+import { getProxiedImageUrl } from "@/lib/image-utils";
 
 interface Book {
   id: string;
@@ -13,6 +14,11 @@ interface Book {
   pageCount?: number | null;
   categories: string[];
   tags: string[];
+  readFreeLinks?: string[];
+  purchaseLinks?: {
+    amazon?: string;
+    custom?: Array<{ label: string; url: string }>;
+  } | null;
 }
 
 interface BookCardProps {
@@ -33,8 +39,12 @@ export function BookCard({ book, onClick }: BookCardProps) {
     ? book.description.slice(0, 147) + "..."
     : book.description;
 
-  // Format authors for display
-  const authorText = formatAuthors(book.authors);
+  // Convert author name to URL slug
+  const authorToSlug = (author: string) => {
+    return author.toLowerCase().replace(/\s+/g, "-");
+  };
+
+  const coverUrl = getProxiedImageUrl(book.thumbnailUrl, { width: 240, quality: 75 });
 
   return (
     <div
@@ -53,9 +63,9 @@ export function BookCard({ book, onClick }: BookCardProps) {
     >
       {/* Book Cover */}
       <div style={{ position: "relative", flexShrink: 0 }}>
-        {book.thumbnailUrl ? (
+        {coverUrl ? (
           <img
-            src={book.thumbnailUrl}
+            src={coverUrl}
             alt={book.title}
             style={{
               width: "120px",
@@ -123,16 +133,40 @@ export function BookCard({ book, onClick }: BookCardProps) {
           {book.title}
         </h3>
         
-        <p
-          style={{
-            margin: "0 0 0.25rem 0",
-            fontSize: "0.9rem",
-            color: "var(--accent-color)",
-            fontWeight: 500,
-          }}
-        >
-          {authorText}
-        </p>
+        {book.authors.length > 0 && (
+          <p
+            style={{
+              margin: "0 0 0.25rem 0",
+              fontSize: "0.9rem",
+              color: "var(--accent-color)",
+              fontWeight: 500,
+            }}
+          >
+            {book.authors.map((author, index) => (
+              <span key={author}>
+                {index > 0 && ", "}
+                <a
+                  href={`/books/author/${authorToSlug(author)}`}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    color: "var(--accent-color)",
+                    textDecoration: "none",
+                    borderBottom: "1px solid transparent",
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLElement).style.borderBottomColor = "var(--accent-color)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.borderBottomColor = "transparent";
+                  }}
+                >
+                  {author}
+                </a>
+              </span>
+            ))}
+          </p>
+        )}
 
         {book.publisher && (
           <p

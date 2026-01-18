@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { prisma } from "../../../lib/prisma";
 import { requireAuth } from "../../../lib/auth-utils";
+import { cleanPurchaseLinks } from "../../../lib/book-utils";
 
 export const GET: APIRoute = async ({ params }) => {
   const book = await prisma.book.findUnique({
@@ -60,6 +61,8 @@ export const PUT: APIRoute = async (context) => {
       previewLink: body.previewLink,
       infoLink: body.infoLink,
       tags: body.tags,
+      readFreeLinks: body.readFreeLinks || [],
+      purchaseLinks: body.purchaseLinks ? cleanPurchaseLinks(body.purchaseLinks) : null,
       isPublished: body.isPublished,
     },
   });

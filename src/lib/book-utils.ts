@@ -73,3 +73,93 @@ export function formatAuthors(authors: string[]): string {
   if (authors.length === 2) return authors.join(" and ");
   return `${authors.slice(0, -1).join(", ")}, and ${authors[authors.length - 1]}`;
 }
+
+/**
+ * Validate URL format
+ */
+export function validateUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate read free links array
+ */
+export function validateReadFreeLinks(links: string[]): { valid: boolean; error?: string } {
+  if (!Array.isArray(links)) {
+    return { valid: false, error: "Read free links must be an array" };
+  }
+
+  for (const link of links) {
+    if (!validateUrl(link)) {
+      return { valid: false, error: `Invalid URL: ${link}` };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validate purchase links structure
+ */
+export function validatePurchaseLinks(purchaseLinks: any): { valid: boolean; error?: string } {
+  if (!purchaseLinks) {
+    return { valid: true };
+  }
+
+  if (typeof purchaseLinks !== "object") {
+    return { valid: false, error: "Purchase links must be an object" };
+  }
+
+  if (purchaseLinks.amazon && !validateUrl(purchaseLinks.amazon)) {
+    return { valid: false, error: "Invalid Amazon URL" };
+  }
+
+  if (purchaseLinks.custom) {
+    if (!Array.isArray(purchaseLinks.custom)) {
+      return { valid: false, error: "Custom purchase links must be an array" };
+    }
+
+    for (const link of purchaseLinks.custom) {
+      if (!link.label || !link.url) continue;
+
+      if (typeof link.label !== "string") {
+        return { valid: false, error: "Custom link label must be a string" };
+      }
+
+      if (!validateUrl(link.url)) {
+        return { valid: false, error: `Invalid custom link URL: ${link.url}` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Clean purchase links by removing empty custom entries
+ */
+export function cleanPurchaseLinks(purchaseLinks: any): any {
+  if (!purchaseLinks) return null;
+
+  const cleaned: any = {};
+
+  if (purchaseLinks.amazon) {
+    cleaned.amazon = purchaseLinks.amazon;
+  }
+
+  if (purchaseLinks.custom && Array.isArray(purchaseLinks.custom)) {
+    const validCustom = purchaseLinks.custom.filter(
+      (link: any) => link.label && link.url
+    );
+    if (validCustom.length > 0) {
+      cleaned.custom = validCustom;
+    }
+  }
+
+  return Object.keys(cleaned).length > 0 ? cleaned : null;
+}

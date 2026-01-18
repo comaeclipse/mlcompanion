@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { getProxiedImageUrl } from "@/lib/image-utils";
 
 interface Book {
   id?: string;
@@ -19,6 +20,11 @@ interface Book {
   previewLink?: string;
   infoLink?: string;
   tags: string[];
+  readFreeLinks: string[];
+  purchaseLinks?: {
+    amazon?: string;
+    custom: Array<{ label: string; url: string }>;
+  };
 }
 
 interface BookFormProps {
@@ -43,11 +49,18 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
     previewLink: "",
     infoLink: "",
     tags: [],
+    readFreeLinks: [],
+    purchaseLinks: {
+      amazon: "",
+      custom: [{ label: "", url: "" }, { label: "", url: "" }],
+    },
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [metaLoading, setMetaLoading] = useState(false);
   const [error, setError] = useState("");
+  const [coverImageMode, setCoverImageMode] = useState<"url" | "upload">("url");
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   // Update form when book prop changes
   useEffect(() => {
@@ -69,6 +82,11 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         previewLink: "",
         infoLink: "",
         tags: [],
+        readFreeLinks: [],
+        purchaseLinks: {
+          amazon: "",
+          custom: [{ label: "", url: "" }, { label: "", url: "" }],
+        },
       });
     }
   }, [book]);
@@ -119,6 +137,41 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
       setError("Network error while fetching metadata");
     } finally {
       setMetaLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadLoading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/books/upload-cover", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "Failed to upload image");
+        return;
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({
+        ...prev,
+        thumbnailUrl: data.url,
+      }));
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError("Network error while uploading image");
+    } finally {
+      setUploadLoading(false);
     }
   };
 
@@ -249,14 +302,80 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         </div>
       </div>
 
+      {/* Cover Image Section */}
       <div>
-        <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-        <Input
-          type="url"
-          value={formData.thumbnailUrl || ""}
-          onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-          placeholder="https://..."
-        />
+        <label className="block text-sm font-medium mb-2">Cover Image</label>
+
+        {/* Toggle between URL and Upload */}
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+            <input
+              type="radio"
+              name="coverImageMode"
+              value="url"
+              checked={coverImageMode === "url"}
+              onChange={(e) => setCoverImageMode(e.target.value as "url" | "upload")}
+            />
+            <span>Use URL</span>
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+            <input
+              type="radio"
+              name="coverImageMode"
+              value="upload"
+              checked={coverImageMode === "upload"}
+              onChange={(e) => setCoverImageMode(e.target.value as "url" | "upload")}
+            />
+            <span>Upload Image</span>
+          </label>
+        </div>
+
+        {/* Conditional Input Based on Mode */}
+        {coverImageMode === "url" ? (
+          <Input
+            type="url"
+            value={formData.thumbnailUrl || ""}
+            onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+            placeholder="https://..."
+          />
+        ) : (
+          <div>
+            <input
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              onChange={handleFileUpload}
+              disabled={uploadLoading}
+              style={{
+                padding: "0.5rem",
+                border: "1px solid var(--border-color)",
+                borderRadius: "6px",
+                width: "100%",
+                cursor: uploadLoading ? "not-allowed" : "pointer",
+              }}
+            />
+            <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.5rem" }}>
+              {uploadLoading ? "Uploading..." : "Max 5MB. JPEG, PNG, WebP, or GIF"}
+            </p>
+          </div>
+        )}
+
+        {/* Preview Current Image */}
+        {formData.thumbnailUrl && (
+          <div style={{ marginTop: "1rem" }}>
+            <p style={{ fontSize: "0.75rem", fontWeight: 500, marginBottom: "0.5rem" }}>Current Cover:</p>
+            <img
+              src={getProxiedImageUrl(formData.thumbnailUrl, { width: 240, quality: 75 }) || formData.thumbnailUrl}
+              alt="Cover preview"
+              style={{
+                width: "120px",
+                height: "180px",
+                objectFit: "cover",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
@@ -309,6 +428,129 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
           onChange={(e) => setFormData({ ...formData, previewLink: e.target.value })}
           placeholder="https://books.google.com/books?id=..."
         />
+      </div>
+
+      {/* Read Free Links Section */}
+      <div style={{ background: "rgba(46, 204, 113, 0.08)", padding: "1rem", borderRadius: "8px" }}>
+        <label className="block text-sm font-medium mb-2">
+          📖 Read Free Online (comma-separated URLs)
+        </label>
+        <Input
+          type="text"
+          value={formData.readFreeLinks.join(", ")}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              readFreeLinks: e.target.value.split(",").map(url => url.trim()).filter(Boolean)
+            })
+          }
+          placeholder="https://marxists.org/..., https://archive.org/..."
+        />
+        <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.5rem" }}>
+          Links to free online versions (Marxists.org, Archive.org, etc.)
+        </p>
+      </div>
+
+      {/* Purchase Links Section */}
+      <div style={{ background: "rgba(52, 152, 219, 0.08)", padding: "1rem", borderRadius: "8px" }}>
+        <label className="block text-sm font-medium mb-2">
+          🛒 Purchase Links
+        </label>
+
+        {/* Amazon Link */}
+        <div style={{ marginBottom: "0.75rem" }}>
+          <label className="block text-sm font-medium mb-1">Amazon</label>
+          <Input
+            type="url"
+            value={formData.purchaseLinks?.amazon || ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                purchaseLinks: {
+                  amazon: e.target.value,
+                  custom: formData.purchaseLinks?.custom || [{ label: "", url: "" }, { label: "", url: "" }],
+                },
+              })
+            }
+            placeholder="https://www.amazon.com/..."
+          />
+        </div>
+
+        {/* Custom Purchase Link 1 */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          <div>
+            <label className="block text-sm font-medium mb-1">Label 1</label>
+            <Input
+              type="text"
+              value={formData.purchaseLinks?.custom?.[0]?.label || ""}
+              onChange={(e) => {
+                const custom = formData.purchaseLinks?.custom || [{ label: "", url: "" }, { label: "", url: "" }];
+                custom[0] = { ...custom[0], label: e.target.value };
+                setFormData({
+                  ...formData,
+                  purchaseLinks: { amazon: formData.purchaseLinks?.amazon || "", custom },
+                });
+              }}
+              placeholder="Verso Books"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">URL 1</label>
+            <Input
+              type="url"
+              value={formData.purchaseLinks?.custom?.[0]?.url || ""}
+              onChange={(e) => {
+                const custom = formData.purchaseLinks?.custom || [{ label: "", url: "" }, { label: "", url: "" }];
+                custom[0] = { ...custom[0], url: e.target.value };
+                setFormData({
+                  ...formData,
+                  purchaseLinks: { amazon: formData.purchaseLinks?.amazon || "", custom },
+                });
+              }}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+
+        {/* Custom Purchase Link 2 */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.5rem" }}>
+          <div>
+            <label className="block text-sm font-medium mb-1">Label 2</label>
+            <Input
+              type="text"
+              value={formData.purchaseLinks?.custom?.[1]?.label || ""}
+              onChange={(e) => {
+                const custom = formData.purchaseLinks?.custom || [{ label: "", url: "" }, { label: "", url: "" }];
+                custom[1] = { ...custom[1], label: e.target.value };
+                setFormData({
+                  ...formData,
+                  purchaseLinks: { amazon: formData.purchaseLinks?.amazon || "", custom },
+                });
+              }}
+              placeholder="Haymarket Books"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">URL 2</label>
+            <Input
+              type="url"
+              value={formData.purchaseLinks?.custom?.[1]?.url || ""}
+              onChange={(e) => {
+                const custom = formData.purchaseLinks?.custom || [{ label: "", url: "" }, { label: "", url: "" }];
+                custom[1] = { ...custom[1], url: e.target.value };
+                setFormData({
+                  ...formData,
+                  purchaseLinks: { amazon: formData.purchaseLinks?.amazon || "", custom },
+                });
+              }}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+
+        <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.5rem" }}>
+          Add Amazon link and up to 2 custom purchase options
+        </p>
       </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
