@@ -1,0 +1,25 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { LoginForm } from "../components/LoginForm";
+import { getSessionFromRequest } from "../lib/auth";
+
+const result = await getSessionFromRequest(Astro.request);
+if (result?.user) {
+  return Astro.redirect("/manage");
+}
+---
+
+<Layout title="Login - MLCompanion">
+  <div class="page">
+    <div class="hero">
+      <h1>Login</h1>
+      <p class="muted">Access the management dashboard</p>
+    </div>
+
+    <div style="max-width: 400px; margin: 2rem auto;">
+      <div class="panel">
+        <LoginForm client:load />
+      </div>
+    </div>
+  </div>
+</Layout>

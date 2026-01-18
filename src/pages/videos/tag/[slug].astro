@@ -1,0 +1,63 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { VideoLibraryWithToggle } from "../../../components/VideoLibraryWithToggle";
+import { prisma } from "../../../lib/prisma";
+import { unslugifyTag } from "../../../lib/tag-utils";
+
+const { slug } = Astro.params;
+const tagName = unslugifyTag(slug || "");
+
+// Find videos with this tag (case-insensitive)
+const videos = await prisma.video.findMany({
+  where: { 
+    isPublished: true,
+    tags: {
+      hasSome: [tagName]
+    }
+  },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+});
+
+// If no exact match, try case-insensitive search
+const allVideos = videos.length === 0 
+  ? await prisma.video.findMany({
+      where: { isPublished: true },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+    })
+  : [];
+
+const matchedVideos = videos.length === 0
+  ? allVideos.filter(v => 
+      v.tags.some(t => t.toLowerCase() === tagName.toLowerCase())
+    )
+  : videos;
+---
+
+<Layout title={`${tagName} - Videos - MLCompanion`}>
+  <div class="page">
+    <header class="hero">
+      <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <p class="eyebrow">Tag</p>
+          <h1 style="margin: 0.5rem 0;">{tagName}</h1>
+          <p class="muted" style="margin: 0;">
+            {matchedVideos.length} {matchedVideos.length === 1 ? "video" : "videos"}
+          </p>
+        </div>
+        <a href="/videos" class="button" style="text-decoration: none;">
+          ← All Videos
+        </a>
+      </div>
+    </header>
+
+    <section style="margin-top: 1.5rem;">
+      {matchedVideos.length === 0 ? (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <p class="muted">No videos found with this tag.</p>
+        </div>
+      ) : (
+        <VideoLibraryWithToggle client:load videos={matchedVideos} />
+      )}
+    </section>
+  </div>
+</Layout>

@@ -9,7 +9,16 @@ import vercel from "@astrojs/vercel";
 // https://astro.build/config
 export default defineConfig({
   output: "server",
-  adapter: vercel(),
+  adapter: vercel({
+    imageService: true,
+    imagesConfig: {
+      sizes: [120, 180, 240, 360, 400, 600, 800, 1200],
+      remotePatterns: [
+        { protocol: "https", hostname: "**" },
+        { protocol: "http", hostname: "**" },
+      ],
+    },
+  }),
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],

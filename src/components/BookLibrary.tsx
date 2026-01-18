@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookCard } from "./BookCard";
+import { getProxiedImageUrl } from "@/lib/image-utils";
 
 interface Book {
   id: string;
@@ -22,6 +23,7 @@ interface BookLibraryProps {
 
 export function BookLibrary({ books }: BookLibraryProps) {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const selectedCoverUrl = getProxiedImageUrl(selectedBook?.thumbnailUrl, { width: 400, quality: 80 });
 
   return (
     <>
@@ -67,9 +69,9 @@ export function BookLibrary({ books }: BookLibraryProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", gap: "2rem", marginBottom: "1.5rem" }}>
-              {selectedBook.thumbnailUrl ? (
+              {selectedCoverUrl ? (
                 <img
-                  src={selectedBook.thumbnailUrl}
+                  src={selectedCoverUrl}
                   alt={selectedBook.title}
                   style={{
                     width: "200px",

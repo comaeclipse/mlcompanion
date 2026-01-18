@@ -1,0 +1,75 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { BookLibraryWithToggle } from "../../../components/BookLibraryWithToggle";
+import { prisma } from "../../../lib/prisma";
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect("/books");
+}
+
+// Convert slug back to author name (capitalize each word)
+const authorName = slug
+  .split("-")
+  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+  .join(" ");
+
+// Find books by this author (case-insensitive partial match)
+const books = await prisma.book.findMany({
+  where: {
+    isPublished: true,
+    authors: {
+      hasSome: [authorName]
+    }
+  },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+});
+
+// If no exact match, try finding books where author name is contained in the authors array
+if (books.length === 0) {
+  const allBooks = await prisma.book.findMany({
+    where: { isPublished: true },
+  });
+  
+  books.push(
+    ...allBooks.filter(book => 
+      book.authors.some(author => 
+        author.toLowerCase().replace(/\s+/g, "-") === slug
+      )
+    )
+  );
+}
+
+if (books.length === 0) {
+  return Astro.redirect("/books");
+}
+
+// Get the actual author name from the first book
+const actualAuthorName = books[0].authors.find(author => 
+  author.toLowerCase().replace(/\s+/g, "-") === slug
+) || authorName;
+---
+
+<Layout title={`${actualAuthorName} - Books - MLCompanion`}>
+  <div class="page">
+    <header class="hero">
+      <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <p class="eyebrow">Author</p>
+          <h1 style="margin-bottom: 0.5rem;">{actualAuthorName}</h1>
+          <p class="muted" style="margin: 0;">
+            {books.length} {books.length === 1 ? "book" : "books"} available
+          </p>
+        </div>
+        <a href="/books" style="text-decoration: none; color: var(--accent-color); font-size: 0.9rem;">
+          ← Back to all books
+        </a>
+      </div>
+    </header>
+
+    <section style="margin-top: 1.5rem;">
+      <BookLibraryWithToggle client:load books={books} />
+    </section>
+  </div>
+</Layout>

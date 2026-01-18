@@ -1,0 +1,41 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getSessionFromRequest } from "../lib/auth";
+import { prisma } from "../lib/prisma";
+import { ManagePortal } from "../components/ManagePortal";
+
+const result = await getSessionFromRequest(Astro.request);
+if (!result?.user) {
+  return Astro.redirect("/login");
+}
+const session = result;
+
+const url = new URL(Astro.request.url);
+const tabParam = url.searchParams.get("tab");
+const activeTab = tabParam === "books" ? "books" : "videos";
+
+let books = null;
+let videos = null;
+
+if (activeTab === "books") {
+  books = await prisma.book.findMany({
+    where: {
+      createdBy: session.user.id,
+      isPublished: true,
+    },
+    orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  });
+} else {
+  videos = await prisma.video.findMany({
+    where: {
+      createdBy: session.user.id,
+      isPublished: true,
+    },
+    orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  });
+}
+---
+
+<Layout title="Manage - MLCompanion">
+  <ManagePortal client:load initialTab={activeTab} initialBooks={books} initialVideos={videos} />
+</Layout>

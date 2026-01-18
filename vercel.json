@@ -1,0 +1,15 @@
+{
+  "images": {
+    "sizes": [120, 180, 240, 360, 400, 600, 800, 1200],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "**"
+      },
+      {
+        "protocol": "http",
+        "hostname": "**"
+      }
+    ]
+  }
+}

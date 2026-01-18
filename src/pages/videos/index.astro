@@ -1,32 +1,32 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { BookLibraryWithToggle } from "../../components/BookLibraryWithToggle";
+import { VideoLibraryWithToggle } from "../../components/VideoLibraryWithToggle";
 import { prisma } from "../../lib/prisma";
 
-const books = await prisma.book.findMany({
+const videos = await prisma.video.findMany({
   where: { isPublished: true },
   orderBy: [{ order: "asc" }, { createdAt: "desc" }],
 });
 ---
 
-<Layout title="Book Library - MLCompanion">
+<Layout title="Video Library - MLCompanion">
   <div class="page">
     <header class="hero">
       <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
         <div>
-          <h1 style="margin-bottom: 0.5rem;">📚 Book Library</h1>
-          <p class="muted" style="margin: 0;">Essential readings on Marxist-Leninist theory and practice</p>
+          <h1 style="margin-bottom: 0.5rem;">📹 Video Library</h1>
+          <p class="muted" style="margin: 0;">Educational videos on Marxist-Leninist theory and practice</p>
         </div>
       </div>
     </header>
 
     <section style="margin-top: 1.5rem;">
-      {books.length === 0 ? (
+      {videos.length === 0 ? (
         <div class="panel" style="text-align: center; padding: 3rem;">
-          <p class="muted">No books available yet. Check back soon!</p>
+          <p class="muted">No videos available yet. Check back soon!</p>
         </div>
       ) : (
-        <BookLibraryWithToggle client:load books={books} />
+        <VideoLibraryWithToggle client:load videos={videos} />
       )}
     </section>
   </div>
