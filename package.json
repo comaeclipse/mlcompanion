@@ -8,6 +8,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "create-admin": "tsx scripts/create-admin.ts",
+    "migrate-authors": "tsx scripts/migrate-authors.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

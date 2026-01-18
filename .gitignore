@@ -26,3 +26,6 @@ pnpm-debug.log*
 /src/generated/prisma
 
 .vercel
+
+# project documentation
+CLAUDE.md

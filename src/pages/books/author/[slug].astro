@@ -2,6 +2,7 @@
 import Layout from "../../../layouts/Layout.astro";
 import { BookLibraryWithToggle } from "../../../components/BookLibraryWithToggle";
 import { prisma } from "../../../lib/prisma";
+import { getProxiedImageUrl } from "../../../lib/image-utils";
 
 const { slug } = Astro.params;
 
@@ -9,67 +10,90 @@ if (!slug) {
   return Astro.redirect("/books");
 }
 
-// Convert slug back to author name (capitalize each word)
-const authorName = slug
-  .split("-")
-  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-  .join(" ");
-
-// Find books by this author (case-insensitive partial match)
-const books = await prisma.book.findMany({
-  where: {
-    isPublished: true,
-    authors: {
-      hasSome: [authorName]
+const author = await prisma.author.findUnique({
+  where: { slug },
+  include: {
+    books: {
+      include: {
+        book: {
+          where: { isPublished: true }
+        }
+      },
+      orderBy: { order: "asc" }
     }
-  },
-  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  }
 });
 
-// If no exact match, try finding books where author name is contained in the authors array
-if (books.length === 0) {
-  const allBooks = await prisma.book.findMany({
-    where: { isPublished: true },
-  });
-  
-  books.push(
-    ...allBooks.filter(book => 
-      book.authors.some(author => 
-        author.toLowerCase().replace(/\s+/g, "-") === slug
-      )
-    )
-  );
-}
-
-if (books.length === 0) {
+if (!author) {
   return Astro.redirect("/books");
 }
 
-// Get the actual author name from the first book
-const actualAuthorName = books[0].authors.find(author => 
-  author.toLowerCase().replace(/\s+/g, "-") === slug
-) || authorName;
+const books = author.books.map(ba => ba.book).filter(Boolean);
+const photoUrl = author.photoUrl ? getProxiedImageUrl(author.photoUrl, { width: 400, quality: 80 }) : null;
 ---
 
-<Layout title={`${actualAuthorName} - Books - MLCompanion`}>
+<Layout title={`${author.name} - Books - MLCompanion`}>
   <div class="page">
-    <header class="hero">
-      <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
-        <div>
+    {/* Two-column layout */}
+    <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; margin-bottom: 2rem;">
+
+      {/* Left Column: Photo */}
+      <div>
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt={author.name}
+            style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);"
+          />
+        ) : (
+          <div
+            style="width: 100%; aspect-ratio: 1; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 6rem; font-weight: 600; border: 2px solid var(--border-color);"
+          >
+            {author.name.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      {/* Right Column: Name, Bio, Books */}
+      <div>
+        <div style="margin-bottom: 1.5rem;">
           <p class="eyebrow">Author</p>
-          <h1 style="margin-bottom: 0.5rem;">{actualAuthorName}</h1>
+          <h1 style="margin-bottom: 0.5rem;">{author.name}</h1>
           <p class="muted" style="margin: 0;">
             {books.length} {books.length === 1 ? "book" : "books"} available
           </p>
         </div>
-        <a href="/books" style="text-decoration: none; color: var(--accent-color); font-size: 0.9rem;">
-          ← Back to all books
-        </a>
-      </div>
-    </header>
 
-    <section style="margin-top: 1.5rem;">
-      <BookLibraryWithToggle client:load books={books} />
+        {author.bio && (
+          <div style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Biography</h2>
+            <p style="line-height: 1.6; color: var(--text-color); white-space: pre-wrap;">
+              {author.bio}
+            </p>
+          </div>
+        )}
+
+        <div style="margin-bottom: 1rem;">
+          <h2 style="font-size: 1.2rem; margin-bottom: 0.75rem;">Books</h2>
+        </div>
+      </div>
+    </div>
+
+    {/* Books Section */}
+    <section>
+      {books.length > 0 ? (
+        <BookLibraryWithToggle client:load books={books} />
+      ) : (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <p class="muted">No books available by this author yet.</p>
+        </div>
+      )}
     </section>
+
+    <div style="margin-top: 2rem; text-align: center;">
+      <a href="/books" style="text-decoration: none; color: var(--accent-color); font-size: 0.9rem;">
+        ← Back to all books
+      </a>
+    </div>
   </div>
 </Layout>

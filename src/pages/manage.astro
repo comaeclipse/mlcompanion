@@ -12,10 +12,11 @@ const session = result;
 
 const url = new URL(Astro.request.url);
 const tabParam = url.searchParams.get("tab");
-const activeTab = tabParam === "books" ? "books" : "videos";
+const activeTab = tabParam === "books" ? "books" : tabParam === "authors" ? "authors" : "videos";
 
 let books = null;
 let videos = null;
+let authors = null;
 
 if (activeTab === "books") {
   books = await prisma.book.findMany({
@@ -25,7 +26,7 @@ if (activeTab === "books") {
     },
     orderBy: [{ order: "asc" }, { createdAt: "desc" }],
   });
-} else {
+} else if (activeTab === "videos") {
   videos = await prisma.video.findMany({
     where: {
       createdBy: session.user.id,
@@ -33,9 +34,17 @@ if (activeTab === "books") {
     },
     orderBy: [{ order: "asc" }, { createdAt: "desc" }],
   });
+} else {
+  // Authors tab - show all authors (global editing model)
+  authors = await prisma.author.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { books: true } }
+    }
+  });
 }
 ---
 
 <Layout title="Manage - MLCompanion">
-  <ManagePortal client:load initialTab={activeTab} initialBooks={books} initialVideos={videos} />
+  <ManagePortal client:load initialTab={activeTab} initialBooks={books} initialVideos={videos} initialAuthors={authors} />
 </Layout>

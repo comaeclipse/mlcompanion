@@ -3,6 +3,7 @@ import { formatAuthors } from "../lib/book-utils";
 import { getProxiedImageUrl } from "../lib/image-utils";
 import { ManageBooksWrapper } from "./ManageBooksWrapper";
 import { ManageVideosWrapper } from "./ManageVideosWrapper";
+import { ManageAuthorsWrapper } from "./ManageAuthorsWrapper";
 
 interface Book {
   id: string;
@@ -35,24 +36,41 @@ interface Video {
   category?: string | null;
 }
 
-interface ManagePortalProps {
-  initialTab: "books" | "videos";
-  initialBooks?: Book[] | null;
-  initialVideos?: Video[] | null;
+interface Author {
+  id: string;
+  name: string;
+  slug: string;
+  bio?: string | null;
+  photoUrl?: string | null;
+  _count?: {
+    books: number;
+  };
 }
 
-export function ManagePortal({ initialTab, initialBooks, initialVideos }: ManagePortalProps) {
-  const [activeTab, setActiveTab] = useState<"books" | "videos">(initialTab);
+interface ManagePortalProps {
+  initialTab: "books" | "videos" | "authors";
+  initialBooks?: Book[] | null;
+  initialVideos?: Video[] | null;
+  initialAuthors?: Author[] | null;
+}
+
+export function ManagePortal({ initialTab, initialBooks, initialVideos, initialAuthors }: ManagePortalProps) {
+  const [activeTab, setActiveTab] = useState<"books" | "videos" | "authors">(initialTab);
   const [books, setBooks] = useState<Book[] | null>(initialBooks ?? null);
   const [videos, setVideos] = useState<Video[] | null>(initialVideos ?? null);
+  const [authors, setAuthors] = useState<Author[] | null>(initialAuthors ?? null);
   const [booksLoading, setBooksLoading] = useState(false);
   const [videosLoading, setVideosLoading] = useState(false);
+  const [authorsLoading, setAuthorsLoading] = useState(false);
   const [booksError, setBooksError] = useState("");
   const [videosError, setVideosError] = useState("");
+  const [authorsError, setAuthorsError] = useState("");
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [authorModalOpen, setAuthorModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
+  const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
 
   const fetchBooks = async () => {
     setBooksLoading(true);
@@ -96,6 +114,27 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
     }
   };
 
+  const fetchAuthors = async () => {
+    setAuthorsLoading(true);
+    setAuthorsError("");
+    try {
+      const response = await fetch("/api/manage/authors", { credentials: "include" });
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Failed to load authors");
+      }
+      const data = await response.json();
+      setAuthors(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setAuthorsError("Failed to load authors. Please try again.");
+    } finally {
+      setAuthorsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -115,12 +154,20 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
     }
   }, [activeTab, videos, videosLoading]);
 
-  const handleTabChange = (tab: "books" | "videos") => {
+  useEffect(() => {
+    if (activeTab === "authors" && authors === null && !authorsLoading) {
+      void fetchAuthors();
+    }
+  }, [activeTab, authors, authorsLoading]);
+
+  const handleTabChange = (tab: "books" | "videos" | "authors") => {
     setActiveTab(tab);
     setBookModalOpen(false);
     setVideoModalOpen(false);
+    setAuthorModalOpen(false);
     setEditingBook(null);
     setEditingVideo(null);
+    setEditingAuthor(null);
   };
 
   const handleAddClick = () => {
@@ -129,8 +176,13 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
       setBookModalOpen(true);
       return;
     }
-    setEditingVideo(null);
-    setVideoModalOpen(true);
+    if (activeTab === "videos") {
+      setEditingVideo(null);
+      setVideoModalOpen(true);
+      return;
+    }
+    setEditingAuthor(null);
+    setAuthorModalOpen(true);
   };
 
   const handleEditBook = (bookId: string) => {
@@ -182,6 +234,32 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
       alert(`Failed to delete video: ${data.error || "Unknown error"}`);
     } catch (err) {
       alert("Failed to delete video. Please try again.");
+    }
+  };
+
+  const handleEditAuthor = (authorId: string) => {
+    const author = authors?.find((item) => item.id === authorId);
+    if (author) {
+      setEditingAuthor(author);
+      setAuthorModalOpen(true);
+    }
+  };
+
+  const handleDeleteAuthor = async (authorId: string) => {
+    if (!confirm("Are you sure you want to delete this author?")) return;
+    try {
+      const response = await fetch(`/api/authors/${authorId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      alert(`Failed to delete author: ${data.error || "Unknown error"}`);
+    } catch (err) {
+      alert("Failed to delete author. Please try again.");
     }
   };
 
@@ -473,16 +551,115 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
     );
   };
 
+  const renderAuthors = () => {
+    if (authorsLoading) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">Loading authors...</p>
+        </div>
+      );
+    }
+
+    if (authorsError) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">{authorsError}</p>
+        </div>
+      );
+    }
+
+    if (!authors || authors.length === 0) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">No authors yet. Click "Add Author" to get started!</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="video-admin-list">
+        {authors.map((author) => (
+          <div key={author.id} className="panel" style={{ padding: "0.75rem" }}>
+            <div style={{ display: "flex", gap: "1rem", alignItems: "start" }}>
+              <div style={{ flexShrink: 0, position: "relative" }}>
+                {author.photoUrl ? (
+                  <img
+                    src={getProxiedImageUrl(author.photoUrl, { width: 200, quality: 75 }) || author.photoUrl}
+                    alt={author.name}
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                      border: "2px solid var(--border-color)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "2.5rem",
+                      fontWeight: 600,
+                      border: "2px solid var(--border-color)",
+                    }}
+                  >
+                    {author.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1rem" }}>{author.name}</h3>
+                <p className="muted" style={{ margin: "0 0 0.25rem 0", fontSize: "0.85rem" }}>
+                  Slug: {author.slug}
+                </p>
+                {author._count && (
+                  <p className="muted" style={{ margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>
+                    {author._count.books} {author._count.books === 1 ? "book" : "books"}
+                  </p>
+                )}
+                {author.bio && (
+                  <p
+                    className="muted"
+                    style={{ margin: "0", fontSize: "0.85rem", lineHeight: 1.4 }}
+                  >
+                    {author.bio.length > 120 ? `${author.bio.slice(0, 117)}...` : author.bio}
+                  </p>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                <button className="button button-sm" onClick={() => handleEditAuthor(author.id)}>
+                  Edit
+                </button>
+                <button className="button button-sm button-danger" onClick={() => handleDeleteAuthor(author.id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="page">
       <header className="hero">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
           <div>
             <h1>Manage Library</h1>
-            <p className="muted">Add, edit, and organize your books and videos</p>
+            <p className="muted">Add, edit, and organize your books, videos, and authors</p>
           </div>
           <button className="button" onClick={handleAddClick}>
-            {activeTab === "books" ? "+ Add Book" : "+ Add Video"}
+            {activeTab === "books" ? "+ Add Book" : activeTab === "videos" ? "+ Add Video" : "+ Add Author"}
           </button>
         </div>
 
@@ -509,10 +686,23 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
           >
             Videos
           </button>
+          <button
+            className="button"
+            onClick={() => handleTabChange("authors")}
+            style={
+              activeTab === "authors"
+                ? {}
+                : { background: "transparent", color: "var(--accent-color)", border: "1px solid var(--accent-color)" }
+            }
+          >
+            Authors
+          </button>
         </div>
       </header>
 
-      <section>{activeTab === "books" ? renderBooks() : renderVideos()}</section>
+      <section>
+        {activeTab === "books" ? renderBooks() : activeTab === "videos" ? renderVideos() : renderAuthors()}
+      </section>
 
       <ManageBooksWrapper
         book={editingBook}
@@ -528,6 +718,14 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos }: Manage
         onClose={() => {
           setVideoModalOpen(false);
           setEditingVideo(null);
+        }}
+      />
+      <ManageAuthorsWrapper
+        author={editingAuthor}
+        isOpen={authorModalOpen}
+        onClose={() => {
+          setAuthorModalOpen(false);
+          setEditingAuthor(null);
         }}
       />
     </div>
