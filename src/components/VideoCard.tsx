@@ -128,7 +128,7 @@ export function VideoCard({ video, onClick }: VideoCardProps) {
             color: "var(--muted-color)",
             lineHeight: 1.4,
             display: "-webkit-box",
-            WebkitLineClamp: 2,
+            WebkitLineClamp: 1,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
           }}
