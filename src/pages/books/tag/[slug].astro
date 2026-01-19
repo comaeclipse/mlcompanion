@@ -1,5 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
 import { BookLibrary } from "../../../components/BookLibrary";
 import { prisma } from "../../../lib/prisma";
 import { unslugifyTag } from "../../../lib/tag-utils";
@@ -35,6 +36,12 @@ const matchedBooks = books.length === 0
 
 <Layout title={`${tagName} - Books - MLCompanion`}>
   <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Books", href: "/books" },
+      { label: tagName }
+    ]} />
+
     <header class="hero">
       <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
         <div>

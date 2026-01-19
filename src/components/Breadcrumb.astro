@@ -1,0 +1,77 @@
+---
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <ol class="breadcrumb-list">
+    {items.map((item, index) => (
+      <li class="breadcrumb-item">
+        {index > 0 && <span class="breadcrumb-separator">/</span>}
+        {item.href ? (
+          <a href={item.href} class="breadcrumb-link">
+            {item.label}
+          </a>
+        ) : (
+          <span class="breadcrumb-current">{item.label}</span>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 1rem;
+  }
+
+  .breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .breadcrumb-separator {
+    color: var(--muted-color);
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+    font-size: 12px;
+  }
+
+  .breadcrumb-link {
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted-color);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+  }
+
+  .breadcrumb-current {
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--ink-color);
+    font-weight: 500;
+  }
+</style>

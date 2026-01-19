@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Breadcrumb from "../components/Breadcrumb.astro";
 import { getSessionFromRequest } from "../lib/auth";
 import { prisma } from "../lib/prisma";
 import { ManagePortal } from "../components/ManagePortal";
@@ -46,5 +47,11 @@ if (activeTab === "books") {
 ---
 
 <Layout title="Manage - MLCompanion">
+  <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Manage" }
+    ]} />
+  </div>
   <ManagePortal client:load initialTab={activeTab} initialBooks={books} initialVideos={videos} initialAuthors={authors} />
 </Layout>

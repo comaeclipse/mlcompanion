@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import Navigation from "../components/Navigation.astro";
 
 const { title = "Learning Hub - Socialism + Marxism" } = Astro.props;
 ---
@@ -14,6 +15,7 @@ const { title = "Learning Hub - Socialism + Marxism" } = Astro.props;
     <title>{title}</title>
   </head>
   <body>
+    <Navigation />
     <slot />
   </body>
 </html>

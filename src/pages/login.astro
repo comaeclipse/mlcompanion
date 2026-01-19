@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Breadcrumb from "../components/Breadcrumb.astro";
 import { LoginForm } from "../components/LoginForm";
 import { getSessionFromRequest } from "../lib/auth";
 
@@ -11,6 +12,11 @@ if (result?.user) {
 
 <Layout title="Login - MLCompanion">
   <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Login" }
+    ]} />
+
     <div class="hero">
       <h1>Login</h1>
       <p class="muted">Access the management dashboard</p>

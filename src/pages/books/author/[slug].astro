@@ -1,5 +1,6 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
 import { BookLibraryWithToggle } from "../../../components/BookLibraryWithToggle";
 import { prisma } from "../../../lib/prisma";
 import { getProxiedImageUrl } from "../../../lib/image-utils";
@@ -31,6 +32,12 @@ const photoUrl = author.photoUrl ? getProxiedImageUrl(author.photoUrl, { width: 
 
 <Layout title={`${author.name} - Books - MLCompanion`}>
   <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Books", href: "/books" },
+      { label: author.name }
+    ]} />
+
     {/* Two-column layout */}
     <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; margin-bottom: 2rem;">
 

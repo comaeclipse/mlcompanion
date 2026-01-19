@@ -1,0 +1,126 @@
+---
+import { getSessionFromRequest } from "../lib/auth";
+
+const result = await getSessionFromRequest(Astro.request);
+const user = result?.user;
+---
+
+<nav class="site-nav" aria-label="Main navigation">
+  <div class="nav-container">
+    <div class="nav-left">
+      <a href="/" class="site-title">
+        <span class="site-logo">✊</span>
+        <span>MLCompanion</span>
+      </a>
+    </div>
+
+    <div class="nav-center">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/videos" class="nav-link">Videos</a>
+      <a href="/books" class="nav-link">Books</a>
+    </div>
+
+    <div class="nav-right">
+      {user ? (
+        <>
+          <a href="/manage" class="nav-link">Manage</a>
+          <form action="/api/auth/logout" method="POST" style="display: inline;">
+            <button type="submit" class="nav-link nav-button">Logout</button>
+          </form>
+        </>
+      ) : (
+        <a href="/login" class="nav-link">Login</a>
+      )}
+    </div>
+  </div>
+</nav>
+
+<style>
+  .site-nav {
+    background: var(--paper-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(67, 44, 23, 0.08);
+  }
+
+  .nav-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .nav-left,
+  .nav-center,
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .site-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-family: "Crimson Pro", "Times New Roman", serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--ink-color);
+    transition: color 0.2s;
+  }
+
+  .site-title:hover {
+    color: var(--accent-color);
+  }
+
+  .site-logo {
+    font-size: 1.5rem;
+  }
+
+  .nav-link {
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--muted-color);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .nav-link:hover {
+    color: var(--accent-color);
+    background: rgba(156, 92, 46, 0.08);
+  }
+
+  .nav-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    .nav-container {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .nav-left,
+    .nav-center,
+    .nav-right {
+      gap: 1rem;
+    }
+
+    .nav-center {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
