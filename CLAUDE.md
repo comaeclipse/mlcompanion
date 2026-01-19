@@ -265,15 +265,15 @@ if (!result?.user) {
 - **YouTube-centric**: Video utilities assume YouTube/Vimeo, extend for other platforms
 - **No tests**: Test infrastructure not yet set up
 - **No migration rollback**: Use `npx prisma migrate reset` to reset database (destructive)
-- **No git repository**: Deploy directly to Vercel with `vercel --prod` command
+- **Homepage**: Shows 5 most recently added videos in Video Library section (ordered by createdAt desc)
 
 ## Deployment Notes
 
 ### Deployment Workflow
-- **No git repository**: Project deploys directly to Vercel (not via git push)
-- Use `vercel --prod` to deploy to production
-- Use `vercel` for preview deployments
-- Vercel CLI automatically uploads changed files
+- Git repository hosted on GitHub
+- Commit changes: `git add . && git commit -m "message"`
+- Push to GitHub: `git push origin main`
+- Deploy to Vercel: `vercel --prod` (deploys directly via Vercel CLI, not automatic from git push)
 
 ### Environment Variables
 - Set via Vercel CLI: `echo "value" | vercel env add VAR_NAME production`
@@ -281,11 +281,12 @@ if (!result?.user) {
 - Must be set for all environments: production, preview, development
 
 ### Deployment Checklist
-1. Run `npx prisma generate` locally after schema changes
-2. Run `npx prisma migrate dev` to create migration locally
-3. Deploy: `vercel --prod`
-4. Vercel automatically runs build (`npm run build`)
-5. Migrations are included in deployment (prisma/migrations/ directory)
+1. Run `npx prisma generate` locally after schema changes (if applicable)
+2. Run `npx prisma migrate dev` to create migration locally (if schema changed)
+3. Commit: `git add . && git commit -m "message"`
+4. Push: `git push origin main`
+5. Deploy: `vercel --prod`
+6. Vercel automatically runs build (`npm run build`) and includes migrations
 
 ### Architecture
 - Deployed on Vercel with serverless functions
