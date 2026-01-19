@@ -1,0 +1,139 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
+import { VideoLibraryWithToggle } from "../../../components/VideoLibraryWithToggle";
+import { prisma } from "../../../lib/prisma";
+
+const { slug } = Astro.params;
+
+// Convert slug back to potential channel names (try different cases)
+const channelSearchTerm = slug?.replace(/-/g, " ") || "";
+
+// Find videos by channel name (case-insensitive search)
+const videos = await prisma.video.findMany({
+  where: {
+    isPublished: true,
+    channelName: {
+      mode: "insensitive",
+      equals: channelSearchTerm,
+    },
+  },
+  orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+});
+
+// If no videos found, try to find any channel that matches
+const allChannels = videos.length === 0
+  ? await prisma.video.findMany({
+      where: {
+        isPublished: true,
+        channelName: {
+          not: null,
+        },
+      },
+      select: {
+        channelName: true,
+      },
+      distinct: ["channelName"],
+    })
+  : [];
+
+// Get the actual channel name from the first video (for proper casing)
+const channelName = videos[0]?.channelName || channelSearchTerm;
+const videoCount = videos.length;
+---
+
+<Layout title={`${channelName} - MLCompanion`}>
+  <div class="page">
+    <Breadcrumb
+      items={[
+        { label: "Home", href: "/" },
+        { label: "Videos", href: "/videos" },
+        { label: channelName },
+      ]}
+    />
+
+    <header class="hero">
+      <div
+        style="display: flex; align-items: start; gap: 2rem; flex-wrap: wrap;"
+      >
+        {/* Channel Avatar */}
+        <div
+          style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-color), #d4835f); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; flex-shrink: 0;"
+        >
+          {channelName.charAt(0).toUpperCase()}
+        </div>
+
+        {/* Channel Info */}
+        <div style="flex: 1; min-width: 250px;">
+          <h1 style="margin-bottom: 0.5rem;">{channelName}</h1>
+          <p class="muted" style="margin: 0 0 1rem 0;">
+            {videoCount} {videoCount === 1 ? "video" : "videos"}
+          </p>
+
+          <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(channelName)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="button"
+              style="text-decoration: none;"
+            >
+              🔍 Find on YouTube
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section style="margin-top: 2rem;">
+      {videos.length === 0 ? (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <h2 style="margin-top: 0;">No videos found</h2>
+          <p class="muted">
+            No videos from this channel are available yet.
+          </p>
+          {allChannels.length > 0 && (
+            <div style="margin-top: 2rem;">
+              <p class="muted" style="margin-bottom: 1rem;">
+                Browse other channels:
+              </p>
+              <div
+                style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;"
+              >
+                {allChannels.slice(0, 10).map((ch) => (
+                  <a
+                    href={`/videos/channel/${ch.channelName?.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
+                    class="pill"
+                    style="text-decoration: none;"
+                  >
+                    {ch.channelName}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style="margin-top: 1.5rem;">
+            <a href="/videos" class="button" style="text-decoration: none;">
+              ← Back to all videos
+            </a>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            style="border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem;"
+          >
+            <h2 style="margin: 0; font-size: 1.2rem;">📹 Videos</h2>
+          </div>
+          <VideoLibraryWithToggle client:load videos={videos} />
+        </>
+      )}
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .button:hover {
+    opacity: 0.9;
+  }
+</style>

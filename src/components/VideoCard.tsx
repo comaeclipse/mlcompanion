@@ -22,9 +22,9 @@ export function VideoCard({ video, onClick }: VideoCardProps) {
     }
   };
 
-  // Truncate description to ~100 chars
-  const shortDesc = video.description.length > 120
-    ? video.description.slice(0, 117) + "..."
+  // Truncate description to 119 chars including "..."
+  const shortDesc = video.description.length > 119
+    ? video.description.slice(0, 116) + "..."
     : video.description;
 
   return (

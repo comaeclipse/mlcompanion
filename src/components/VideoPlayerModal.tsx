@@ -159,7 +159,18 @@ export function VideoPlayerModal({ video, isOpen, onClose }: VideoPlayerModalPro
           
           {video.channelName && (
             <p style={{ fontSize: "0.9rem", color: "var(--muted-color)", margin: "0 0 0.5rem 0" }}>
-              {video.channelName}
+              <a 
+                href={`/videos/channel/${video.channelName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
+                style={{ color: "var(--ink-color)", textDecoration: "none", fontWeight: 500 }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLElement).style.textDecoration = "underline";
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.textDecoration = "none";
+                }}
+              >
+                {video.channelName}
+              </a>
               {video.duration && <span> • {video.duration}</span>}
             </p>
           )}
