@@ -12,6 +12,12 @@ const recentVideos = await prisma.video.findMany({
 ---
 
 <Layout title="Learning Hub - Socialism + Marxism">
+  <style>
+    .video-card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  </style>
   <div class="page">
     <header class="hero">
       <p class="eyebrow">Learning Hub</p>
@@ -112,51 +118,182 @@ const recentVideos = await prisma.video.findMany({
           <span class="badge">contemporary</span>
         </div>
 
-        <div class="resource-list">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
           {recentVideos.length > 0 ? (
             recentVideos.map((video) => {
-              const truncatedDesc = video.description 
-                ? (video.description.length > 180 
-                    ? video.description.substring(0, 180) + "..." 
+              const shortDesc = video.description 
+                ? (video.description.length > 120 
+                    ? video.description.slice(0, 117) + "..." 
                     : video.description)
                 : "No description available.";
               
               return (
-                <article class="resource">
-                  {video.thumbnailUrl && (
-                    <img 
-                      src={video.thumbnailUrl} 
-                      alt={video.title}
-                      style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 0.75rem;"
-                    />
-                  )}
-                  <div class="resource-top">
-                    <h3>{video.title}</h3>
-                    <div class="resource-tags">
-                      {video.tags.slice(0, 3).map((tag: string) => (
-                        <span>{tag}</span>
-                      ))}
-                    </div>
+                <a
+                  href={`/videos/${video.id}`}
+                  style={{
+                    display: "flex",
+                    gap: "1rem",
+                    padding: "0.75rem",
+                    borderRadius: "12px",
+                    background: "var(--paper-color)",
+                    border: "1px solid var(--border-color)",
+                    textDecoration: "none",
+                    color: "inherit",
+                    transition: "transform 0.15s, box-shadow 0.15s",
+                  }}
+                  class="video-card-hover"
+                >
+                  {/* Thumbnail */}
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    {video.thumbnailUrl ? (
+                      <img
+                        src={video.thumbnailUrl}
+                        alt={video.title}
+                        style={{
+                          width: "180px",
+                          height: "100px",
+                          objectFit: "cover",
+                          borderRadius: "8px",
+                          background: "#222",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "180px",
+                          height: "100px",
+                          borderRadius: "8px",
+                          background: "#222",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#666",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        No thumbnail
+                      </div>
+                    )}
+                    {video.duration && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: "4px",
+                          right: "4px",
+                          background: "rgba(0,0,0,0.8)",
+                          color: "white",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontSize: "0.75rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {video.duration}
+                      </span>
+                    )}
                   </div>
-                  <p>{truncatedDesc}</p>
-                  <p class="resource-link">
-                    <a href={`/videos/${video.id}`} target="_blank">View Video</a>
-                    {video.channelName && ` • ${video.channelName}`}
-                    {video.duration && ` • ${video.duration}`}
-                  </p>
-                </article>
+
+                  {/* Video Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3
+                      style={{
+                        margin: "0 0 0.25rem 0",
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        lineHeight: 1.3,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {video.title}
+                    </h3>
+                    
+                    {video.channelName && (
+                      <p
+                        style={{
+                          margin: "0 0 0.25rem 0",
+                          fontSize: "0.85rem",
+                          color: "var(--muted-color)",
+                        }}
+                      >
+                        {video.channelName}
+                      </p>
+                    )}
+
+                    <p
+                      style={{
+                        margin: "0",
+                        fontSize: "0.85rem",
+                        color: "var(--muted-color)",
+                        lineHeight: 1.4,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {shortDesc}
+                    </p>
+
+                    {video.tags.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem", marginTop: "0.5rem" }}>
+                        {video.tags.slice(0, 3).map((tag: string) => (
+                          <span
+                            key={tag}
+                            style={{
+                              fontSize: "0.7rem",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              background: "rgba(156, 92, 46, 0.12)",
+                              color: "var(--accent-color)",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.03em",
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {video.tags.length > 3 && (
+                          <span style={{ fontSize: "0.7rem", color: "var(--muted-color)" }}>
+                            +{video.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </a>
               );
             })
           ) : (
-            <article class="resource">
-              <div class="resource-top">
-                <h3>No videos yet</h3>
-              </div>
-              <p>Start adding videos to build your learning library.</p>
-              <p class="resource-link">
-                <a href="/videos/manage">Add your first video</a>
+            <div
+              style={{
+                padding: "3rem",
+                textAlign: "center",
+                border: "1px solid var(--border-color)",
+                borderRadius: "12px",
+                background: "var(--paper-color)",
+              }}
+            >
+              <h3 style={{ margin: "0 0 0.5rem 0" }}>No videos yet</h3>
+              <p style={{ margin: "0 0 1rem 0", color: "var(--muted-color)" }}>
+                Start adding videos to build your learning library.
               </p>
-            </article>
+              <a
+                href="/videos/manage"
+                style={{
+                  display: "inline-block",
+                  padding: "0.5rem 1rem",
+                  background: "var(--accent-color)",
+                  color: "white",
+                  borderRadius: "8px",
+                  textDecoration: "none",
+                }}
+              >
+                Add your first video
+              </a>
+            </div>
           )}
         </div>
       </div>
