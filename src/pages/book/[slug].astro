@@ -27,14 +27,8 @@ if (!book) {
   return new Response("Not found", { status: 404 });
 }
 
-// Use direct blob URL without Vercel image optimization
-const coverUrl = book.thumbnailUrl && (
-  book.thumbnailUrl.includes('blob.vercel-storage.com') || 
-  book.thumbnailUrl.startsWith('blob:') ||
-  book.thumbnailUrl.startsWith('data:')
-) 
-  ? book.thumbnailUrl 
-  : getProxiedImageUrl(book.thumbnailUrl, { width: 480, quality: 80 }) || book.thumbnailUrl;
+// Use direct URL for all images (Vercel proxy has issues with external URLs)
+const coverUrl = book.thumbnailUrl;
 const authorLabel = formatAuthors(book.authors);
 
 const formatCount = (value?: number | null) => {

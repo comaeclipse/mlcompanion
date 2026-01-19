@@ -44,14 +44,8 @@ export function BookCard({ book, onClick }: BookCardProps) {
     return author.toLowerCase().replace(/\s+/g, "-");
   };
 
-  // Use direct blob URL without Vercel image optimization
-  const coverUrl = book.thumbnailUrl && (
-    book.thumbnailUrl.includes('blob.vercel-storage.com') || 
-    book.thumbnailUrl.startsWith('blob:') ||
-    book.thumbnailUrl.startsWith('data:')
-  ) 
-    ? book.thumbnailUrl 
-    : getProxiedImageUrl(book.thumbnailUrl, { width: 240, quality: 75 });
+  // Use direct URL for all images (Vercel proxy has issues with external URLs)
+  const coverUrl = book.thumbnailUrl;
 
   return (
     <div

@@ -420,13 +420,7 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
           <div style={{ marginTop: "1rem" }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 500, marginBottom: "0.5rem" }}>Current Cover:</p>
             <img
-              src={
-                formData.thumbnailUrl.includes('blob.vercel-storage.com') || 
-                formData.thumbnailUrl.startsWith('blob:') ||
-                formData.thumbnailUrl.startsWith('data:')
-                  ? formData.thumbnailUrl 
-                  : getProxiedImageUrl(formData.thumbnailUrl, { width: 240, quality: 75 }) || formData.thumbnailUrl
-              }
+              src={formData.thumbnailUrl}
               alt="Cover preview"
               style={{
                 width: "120px",

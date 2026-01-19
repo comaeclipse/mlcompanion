@@ -27,14 +27,8 @@ if (!author) {
 }
 
 const books = author.books.map(ba => ba.book).filter(Boolean);
-// Use direct blob URL without Vercel image optimization
-const photoUrl = author.photoUrl && (
-  author.photoUrl.includes('blob.vercel-storage.com') || 
-  author.photoUrl.startsWith('blob:') ||
-  author.photoUrl.startsWith('data:')
-) 
-  ? author.photoUrl 
-  : getProxiedImageUrl(author.photoUrl, { width: 400, quality: 80 });
+// Use direct URL for all images (Vercel proxy has issues with external URLs)
+const photoUrl = author.photoUrl;
 ---
 
 <Layout title={`${author.name} - Books - MLCompanion`}>
