@@ -78,6 +78,75 @@ const stripInlineStyles = (html: string) => {
               {book.title}
             </div>
           )}
+
+          {/* Availability Section */}
+          {(book.readFreeLinks?.length > 0 || book.purchaseLinks) && (
+            <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); width: 220px;">
+              {/* Read Free Links */}
+              {book.readFreeLinks && book.readFreeLinks.length > 0 && (
+                <p style="font-size: 0.95rem; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                  <span style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--ink-color);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                      <path d="M12 7v14"></path>
+                    </svg>
+                    <span>Read at</span>
+                  </span>
+                  {book.readFreeLinks.map((link, index) => (
+                    <span>
+                      {index > 0 && <span style="color: var(--muted-color);">, </span>}
+                      <a href={link} target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s;">
+                        {getDomain(link)}
+                      </a>
+                    </span>
+                  ))}
+                </p>
+              )}
+
+              {/* Purchase Links */}
+              {book.purchaseLinks && (() => {
+                const links = [];
+
+                if (book.purchaseLinks?.amazon) {
+                  links.push({
+                    url: book.purchaseLinks.amazon,
+                    domain: getDomain(book.purchaseLinks.amazon),
+                  });
+                }
+
+                book.purchaseLinks?.custom?.forEach((custom: { label?: string; url?: string }) => {
+                  if (custom.url) {
+                    links.push({
+                      url: custom.url,
+                      domain: custom.label || getDomain(custom.url),
+                    });
+                  }
+                });
+
+                return links.length > 0 ? (
+                  <p style="font-size: 0.95rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--ink-color);">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="8" cy="21" r="1"></circle>
+                        <circle cx="19" cy="21" r="1"></circle>
+                        <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+                      </svg>
+                      <span>Purchase at</span>
+                    </span>
+                    {links.map((link, index) => (
+                      <span>
+                        {index > 0 && <span style="color: var(--muted-color);">, </span>}
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s;">
+                          {link.domain}
+                        </a>
+                      </span>
+                    ))}
+                  </p>
+                ) : null;
+              })()}
+            </div>
+          )}
         </div>
 
         <div style="flex: 1; min-width: 240px;">
@@ -172,55 +241,6 @@ const stripInlineStyles = (html: string) => {
             </div>
           ))}
         </div>
-      </section>
-    )}
-
-    {(book.readFreeLinks?.length > 0 || book.purchaseLinks) && (
-      <section class="panel" style="margin-top: 1.5rem;">
-        <h2>Availability</h2>
-        {book.readFreeLinks && book.readFreeLinks.length > 0 && (
-          <p class="muted" style="margin-bottom: 0.75rem;">
-            Read at{" "}
-            {book.readFreeLinks.map((link, index) => (
-              <span>
-                {index > 0 && <span>, </span>}
-                <a href={link} target="_blank" rel="noopener noreferrer">{getDomain(link)}</a>
-              </span>
-            ))}
-          </p>
-        )}
-
-        {book.purchaseLinks && (() => {
-          const links = [];
-
-          if (book.purchaseLinks?.amazon) {
-            links.push({
-              url: book.purchaseLinks.amazon,
-              domain: getDomain(book.purchaseLinks.amazon),
-            });
-          }
-
-          book.purchaseLinks?.custom?.forEach((custom: { label?: string; url?: string }) => {
-            if (custom.url) {
-              links.push({
-                url: custom.url,
-                domain: custom.label || getDomain(custom.url),
-              });
-            }
-          });
-
-          return links.length > 0 ? (
-            <p class="muted">
-              Purchase at{" "}
-              {links.map((link, index) => (
-                <span>
-                  {index > 0 && <span>, </span>}
-                  <a href={link.url} target="_blank" rel="noopener noreferrer">{link.domain}</a>
-                </span>
-              ))}
-            </p>
-          ) : null;
-        })()}
       </section>
     )}
   </div>
