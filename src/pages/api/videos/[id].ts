@@ -51,6 +51,7 @@ export const PUT: APIRoute = async (context) => {
       url: body.url,
       thumbnailUrl: body.thumbnailUrl,
       channelName: body.channelName,
+      channelId: body.channelId !== undefined ? body.channelId : undefined,
       publishedAt: body.publishedAt ? new Date(body.publishedAt) : null,
       tags: body.tags,
       category: body.category,

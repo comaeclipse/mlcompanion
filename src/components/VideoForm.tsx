@@ -134,11 +134,17 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
     const url = video?.id ? `/api/videos/${video.id}` : "/api/videos";
     const method = video?.id ? "PUT" : "POST";
 
+    // Prepare data with channelId
+    const submitData = {
+      ...formData,
+      channelId: selectedChannelId || null,
+    };
+
     try {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       if (response.ok) {
