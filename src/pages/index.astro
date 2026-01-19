@@ -1,5 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { prisma } from "../lib/prisma";
+
+// Fetch recently added videos (limit to 5)
+const recentVideos = await prisma.video.findMany({
+  where: { isPublished: true },
+  orderBy: { createdAt: "desc" },
+  take: 5,
+  include: { creator: { select: { name: true } } },
+});
 ---
 
 <Layout title="Learning Hub - Socialism + Marxism">
@@ -104,39 +113,36 @@ import Layout from "../layouts/Layout.astro";
         </div>
 
         <div class="resource-list">
-          <article class="resource">
-            <div class="resource-top">
-              <h3>Placeholder Video Title</h3>
-              <div class="resource-tags">
-                <span>intro</span>
-                <span>history</span>
+          {recentVideos.length > 0 ? (
+            recentVideos.map((video) => (
+              <article class="resource">
+                <div class="resource-top">
+                  <h3>{video.title}</h3>
+                  <div class="resource-tags">
+                    {video.tags.slice(0, 3).map((tag: string) => (
+                      <span>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <p>{video.description || "No description available."}</p>
+                <p class="resource-link">
+                  <a href={`/videos/${video.id}`} target="_blank">View Video</a>
+                  {video.channelName && ` • ${video.channelName}`}
+                  {video.duration && ` • ${video.duration}`}
+                </p>
+              </article>
+            ))
+          ) : (
+            <article class="resource">
+              <div class="resource-top">
+                <h3>No videos yet</h3>
               </div>
-            </div>
-            <p>Short note on why the video matters or how it fits a path.</p>
-            <p class="resource-link">Link: https://www.youtube.com/</p>
-          </article>
-          <article class="resource">
-            <div class="resource-top">
-              <h3>Placeholder Lecture Title</h3>
-              <div class="resource-tags">
-                <span>marx</span>
-                <span>political economy</span>
-              </div>
-            </div>
-            <p>Focus on theory. Add timestamps for key concepts.</p>
-            <p class="resource-link">Link: https://www.youtube.com/</p>
-          </article>
-          <article class="resource">
-            <div class="resource-top">
-              <h3>Placeholder Debate or Interview</h3>
-              <div class="resource-tags">
-                <span>debate</span>
-                <span>contemporary</span>
-              </div>
-            </div>
-            <p>Notes on perspectives and counter-arguments.</p>
-            <p class="resource-link">Link: https://www.youtube.com/</p>
-          </article>
+              <p>Start adding videos to build your learning library.</p>
+              <p class="resource-link">
+                <a href="/videos/manage">Add your first video</a>
+              </p>
+            </article>
+          )}
         </div>
       </div>
 
