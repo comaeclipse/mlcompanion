@@ -30,13 +30,22 @@ const videos = await prisma.video.findMany({
   },
 });
 
-// Find all books with this tag
+// Find all books with this tag (search both tags and categories)
 const books = await prisma.book.findMany({
   where: {
     isPublished: true,
-    tags: {
-      hasSome: [tagName],
-    },
+    OR: [
+      {
+        tags: {
+          hasSome: [tagName],
+        },
+      },
+      {
+        categories: {
+          hasSome: [tagName],
+        },
+      },
+    ],
   },
   orderBy: [{ order: "asc" }, { createdAt: "desc" }],
 });

@@ -206,9 +206,13 @@ const stripInlineStyles = (html: string) => {
                 </a>
               ))}
               {book.categories.map((category) => (
-                <span class="badge" style="color: #667eea; border-color: rgba(102, 126, 234, 0.4);">
+                <a
+                  href={`/topic/${category.toLowerCase().replace(/\s+/g, "-")}`}
+                  class="badge"
+                  style="color: #667eea; border-color: rgba(102, 126, 234, 0.4);"
+                >
                   {category}
-                </span>
+                </a>
               ))}
             </div>
           )}
