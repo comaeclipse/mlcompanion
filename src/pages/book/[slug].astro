@@ -199,7 +199,7 @@ const stripInlineStyles = (html: string) => {
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
               {book.tags.map((tag) => (
                 <a
-                  href={`/books/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                  href={`/topic/${tag.toLowerCase().replace(/\s+/g, "-")}`}
                   class="badge"
                 >
                   {tag}

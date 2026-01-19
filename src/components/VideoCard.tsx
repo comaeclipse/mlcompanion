@@ -141,7 +141,7 @@ export function VideoCard({ video, onClick }: VideoCardProps) {
             {video.tags.slice(0, 3).map((tag) => (
               <a
                 key={tag}
-                href={`/videos/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                href={`/topic/${tag.toLowerCase().replace(/\s+/g, "-")}`}
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   fontSize: "0.7rem",
