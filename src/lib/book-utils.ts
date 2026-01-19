@@ -163,3 +163,12 @@ export function cleanPurchaseLinks(purchaseLinks: any): any {
 
   return Object.keys(cleaned).length > 0 ? cleaned : null;
 }
+
+export function slugifyTitle(title: string): string {
+  const normalized = title
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || "book";
+}

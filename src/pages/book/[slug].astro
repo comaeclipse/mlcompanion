@@ -1,0 +1,213 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { prisma } from "../../lib/prisma";
+import { formatAuthors, slugifyTitle } from "../../lib/book-utils";
+import { getProxiedImageUrl } from "../../lib/image-utils";
+
+const { slug } = Astro.params;
+
+const slugValue = slug ?? "";
+const idMatch = slugValue.match(/-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+
+const bookById = idMatch
+  ? await prisma.book.findUnique({
+      where: { id: idMatch[1] },
+    })
+  : null;
+
+const bookFromSlug = await prisma.book.findMany({
+  where: { isPublished: true },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+});
+
+const book = bookById || bookFromSlug.find((item) => slugifyTitle(item.title) === slugValue) || null;
+
+if (!book) {
+  return new Response("Not found", { status: 404 });
+}
+
+const coverUrl = getProxiedImageUrl(book.thumbnailUrl, { width: 480, quality: 80 }) || book.thumbnailUrl;
+const authorLabel = formatAuthors(book.authors);
+
+const formatCount = (value?: number | null) => {
+  if (value === null || value === undefined) return "";
+  return value.toLocaleString();
+};
+
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace("www.", "");
+  } catch {
+    return url;
+  }
+};
+
+const externalReviews = Array.isArray(book.externalReviews) ? book.externalReviews : [];
+---
+
+<Layout title={`${book.title} - MLCompanion`}>
+  <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Books", href: "/books" },
+      { label: book.title }
+    ]} />
+
+    <header class="hero">
+      <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start;">
+        <div style="flex-shrink: 0;">
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt={book.title}
+              style="width: 220px; height: 330px; object-fit: cover; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);"
+            />
+          ) : (
+            <div style="width: 220px; height: 330px; border-radius: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; padding: 1rem; text-align: center;">
+              {book.title}
+            </div>
+          )}
+        </div>
+
+        <div style="flex: 1; min-width: 240px;">
+          <p class="eyebrow">Book</p>
+          <h1>{book.title}</h1>
+          <p class="subhead">{authorLabel}</p>
+          <div class="hero-meta">
+            {book.publisher && <span>{book.publisher}</span>}
+            {book.publishedDate && <span>{book.publishedDate}</span>}
+            {book.pageCount && <span>{book.pageCount} pages</span>}
+          </div>
+
+          {(book.isbn || book.isbn13) && (
+            <p class="muted" style="margin-top: 0.75rem;">
+              {book.isbn13 && `ISBN-13: ${book.isbn13}`}
+              {book.isbn13 && book.isbn && " • "}
+              {book.isbn && `ISBN-10: ${book.isbn}`}
+            </p>
+          )}
+
+          {(book.goodreadsRating !== null && book.goodreadsRating !== undefined) ||
+          (book.goodreadsReviews !== null && book.goodreadsReviews !== undefined) ? (
+            <p class="muted" style="margin-top: 0.5rem;">
+              Goodreads: {book.goodreadsRating ?? "N/A"}
+              {book.goodreadsReviews !== null && book.goodreadsReviews !== undefined
+                ? ` / ${formatCount(book.goodreadsReviews)} reviews`
+                : ""}
+            </p>
+          ) : null}
+
+          {(book.tags.length > 0 || book.categories.length > 0) && (
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+              {book.tags.map((tag) => (
+                <a
+                  href={`/books/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                  class="badge"
+                >
+                  {tag}
+                </a>
+              ))}
+              {book.categories.map((category) => (
+                <span class="badge" style="color: #667eea; border-color: rgba(102, 126, 234, 0.4);">
+                  {category}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+
+    <section class="panel" style="margin-top: 1.5rem;">
+      <h2>Description</h2>
+      <p style="white-space: pre-wrap; color: var(--muted-color); line-height: 1.7;">{book.description}</p>
+    </section>
+
+    {externalReviews.length > 0 && (
+      <section class="panel" style="margin-top: 1.5rem;">
+        <h2>External Reviews</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          {externalReviews.map((review) => (
+            <div style="background: #fbf7f1; border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem;">
+              <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: baseline;">
+                <strong>{review.authorUsername || "Anonymous"}</strong>
+                {review.reviewDate && (
+                  <span class="muted" style="font-size: 0.85rem;">{review.reviewDate}</span>
+                )}
+                {review.score !== undefined && review.score !== null && (
+                  <span class="muted" style="font-size: 0.85rem;">Score: {review.score}</span>
+                )}
+                {review.sourceUrl && (
+                  <a
+                    href={review.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="font-size: 0.85rem; color: var(--accent-color); text-decoration: none; border-bottom: 1px solid transparent;"
+                  >
+                    Source
+                  </a>
+                )}
+              </div>
+              {review.contentHtml && (
+                <div
+                  style="margin-top: 0.75rem; color: var(--muted-color);"
+                  set:html={review.contentHtml}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {(book.readFreeLinks?.length > 0 || book.purchaseLinks) && (
+      <section class="panel" style="margin-top: 1.5rem;">
+        <h2>Availability</h2>
+        {book.readFreeLinks && book.readFreeLinks.length > 0 && (
+          <p class="muted" style="margin-bottom: 0.75rem;">
+            Read at{" "}
+            {book.readFreeLinks.map((link, index) => (
+              <span>
+                {index > 0 && <span>, </span>}
+                <a href={link} target="_blank" rel="noopener noreferrer">{getDomain(link)}</a>
+              </span>
+            ))}
+          </p>
+        )}
+
+        {book.purchaseLinks && (() => {
+          const links: Array<{ url: string; domain: string }> = [];
+
+          if (book.purchaseLinks?.amazon) {
+            links.push({
+              url: book.purchaseLinks.amazon,
+              domain: getDomain(book.purchaseLinks.amazon),
+            });
+          }
+
+          book.purchaseLinks?.custom?.forEach((custom: { label?: string; url?: string }) => {
+            if (custom.url) {
+              links.push({
+                url: custom.url,
+                domain: custom.label || getDomain(custom.url),
+              });
+            }
+          });
+
+          return links.length > 0 ? (
+            <p class="muted">
+              Purchase at{" "}
+              {links.map((link, index) => (
+                <span>
+                  {index > 0 && <span>, </span>}
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">{link.domain}</a>
+                </span>
+              ))}
+            </p>
+          ) : null;
+        })()}
+      </section>
+    )}
+  </div>
+</Layout>
