@@ -45,6 +45,15 @@ const getDomain = (url: string) => {
 };
 
 const externalReviews = Array.isArray(book.externalReviews) ? book.externalReviews : [];
+
+const stripInlineStyles = (html: string) => {
+  // Remove inline style attributes and strip out excessive formatting
+  return html
+    .replace(/\s*style="[^"]*"/gi, '')
+    .replace(/\s*class="[^"]*"/gi, '')
+    .replace(/<span[^>]*>/gi, '')
+    .replace(/<\/span>/gi, '');
+};
 ---
 
 <Layout title={`${book.title} - MLCompanion`}>
@@ -144,16 +153,20 @@ const externalReviews = Array.isArray(book.externalReviews) ? book.externalRevie
                     href={review.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style="font-size: 0.85rem; color: var(--accent-color); text-decoration: none; border-bottom: 1px solid transparent;"
+                    style="font-size: 0.85rem; color: var(--accent-color); text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;"
                   >
-                    Source
+                    {getDomain(review.sourceUrl)}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 1px;">
+                      <path d="M7 7h10v10"></path>
+                      <path d="M7 17 17 7"></path>
+                    </svg>
                   </a>
                 )}
               </div>
               {review.contentHtml && (
                 <div
-                  style="margin-top: 0.75rem; color: var(--muted-color);"
-                  set:html={review.contentHtml}
+                  style="margin-top: 0.75rem; color: var(--muted-color); line-height: 1.7;"
+                  set:html={stripInlineStyles(review.contentHtml)}
                 />
               )}
             </div>

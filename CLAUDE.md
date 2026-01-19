@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CRITICAL WORKFLOW: Always Deploy Changes
+
+**EVERY TIME you make code changes, you MUST:**
+1. Commit: `git add . && git commit -m "descriptive message"`
+2. Push: `git push origin main`
+3. Deploy: `vercel --prod`
+
+Do NOT skip these steps. The user expects changes to be live immediately after you make them.
+
 ## Project Overview
 
 MLCompanion is a Learning Hub for Socialism and Marxism - an educational platform with video library management, user authentication, and structured learning paths. Built with Astro (SSR), React, Prisma, and Better Auth, deployed to Vercel with a Neon PostgreSQL database.
