@@ -1,0 +1,252 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import InteractiveGuide from "../../components/InteractiveGuide";
+import { guideSections } from "../../lib/guide-content";
+import { getGuideRelatedResources } from "../../lib/guide-related";
+
+const sections = guideSections;
+const firstSection = sections[0];
+const initialRelated = await getGuideRelatedResources(firstSection.related);
+const initialRelatedById = JSON.parse(
+  JSON.stringify({ [firstSection.id]: initialRelated })
+);
+---
+
+<Layout title="What is Marxism? - MLCompanion">
+  <main class="page guide-page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Guides" },
+      { label: "What is Marxism?" }
+    ]} />
+
+    <header class="hero guide-hero">
+      <p class="eyebrow">Interactive Guide</p>
+      <h1>What is Marxism?</h1>
+      <p class="subhead">
+        A step-by-step journey through Marxist ideas, from historical materialism to modern-day relevance.
+        Start with the essentials, then explore deeper concepts and related resources as you go.
+      </p>
+      <div class="hero-meta">
+        <span>7 steps</span>
+        <span>Guided reading</span>
+        <span>Videos + books per step</span>
+      </div>
+    </header>
+
+    <section class="guide-section">
+      <InteractiveGuide client:load sections={sections} initialRelatedById={initialRelatedById} />
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .guide-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .guide-hero {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .guide-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 6px;
+    background: linear-gradient(90deg, rgba(156, 92, 46, 0.4), rgba(156, 92, 46, 0));
+  }
+
+  .guide-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .guide-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .guide-stepper {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .guide-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: rgba(251, 247, 241, 0.9);
+    padding: 12px 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .guide-step:hover,
+  .guide-step:focus-visible {
+    border-color: rgba(156, 92, 46, 0.6);
+    box-shadow: 0 8px 16px rgba(67, 44, 23, 0.08);
+    outline: none;
+  }
+
+  .guide-step.active {
+    background: var(--paper-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 12px 20px rgba(67, 44, 23, 0.12);
+    transform: translateY(-2px);
+  }
+
+  .guide-step.complete .guide-step-index {
+    background: var(--accent-color);
+    color: #fff;
+  }
+
+  .guide-step-index {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    background: rgba(156, 92, 46, 0.12);
+    color: var(--accent-color);
+  }
+
+  .guide-step-label {
+    font-size: 14px;
+    color: var(--ink-color);
+    font-weight: 600;
+  }
+
+  .guide-content {
+    animation: fadeInSlide 0.35s ease;
+  }
+
+  .guide-copy p {
+    margin: 0 0 12px;
+    color: var(--muted-color);
+    line-height: 1.6;
+  }
+
+  .guide-takeaway {
+    border-top: 1px solid var(--border-color);
+    margin-top: 18px;
+    padding-top: 14px;
+    background: rgba(156, 92, 46, 0.06);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+
+  .guide-takeaway-label {
+    display: inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent-color);
+    margin-bottom: 6px;
+  }
+
+  .guide-takeaway p {
+    margin: 0;
+    color: var(--ink-color);
+    font-weight: 600;
+  }
+
+  .guide-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .button-ghost {
+    background: transparent;
+    color: var(--accent-color);
+    border: 1px solid var(--border-color);
+  }
+
+  .button-ghost:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .guide-related {
+    animation: fadeInSlide 0.35s ease;
+  }
+
+  .guide-related-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .guide-related-status {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-color);
+  }
+
+  .guide-related-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .guide-related-column h4 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-color);
+  }
+
+  .guide-related-item {
+    margin-bottom: 12px;
+  }
+
+  @keyframes fadeInSlide {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guide-content,
+    .guide-related {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .guide-stepper {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .guide-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+</style>
