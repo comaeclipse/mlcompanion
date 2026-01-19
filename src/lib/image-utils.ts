@@ -31,6 +31,12 @@ export function getProxiedImageUrl(
     if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
       return trimmed;
     }
+    if (
+      host.endsWith(".public.blob.vercel-storage.com") ||
+      host.endsWith(".blob.vercel-storage.com")
+    ) {
+      return trimmed;
+    }
 
     const params = new URLSearchParams();
     params.set("url", trimmed);

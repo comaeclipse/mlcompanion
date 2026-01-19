@@ -14,11 +14,8 @@ const author = await prisma.author.findUnique({
   where: { slug },
   include: {
     books: {
-      include: {
-        book: {
-          where: { isPublished: true }
-        }
-      },
+      where: { book: { isPublished: true } },
+      include: { book: true },
       orderBy: { order: "asc" }
     }
   }
@@ -92,7 +89,7 @@ const photoUrl = author.photoUrl ? getProxiedImageUrl(author.photoUrl, { width: 
 
     <div style="margin-top: 2rem; text-align: center;">
       <a href="/books" style="text-decoration: none; color: var(--accent-color); font-size: 0.9rem;">
-        ← Back to all books
+        &larr; Back to all books
       </a>
     </div>
   </div>

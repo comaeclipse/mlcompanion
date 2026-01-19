@@ -7,7 +7,8 @@ export const GET: APIRoute = async ({ params }) => {
     where: { id: params.id },
     include: {
       books: {
-        include: { book: { where: { isPublished: true } } },
+        where: { book: { isPublished: true } },
+        include: { book: true },
         orderBy: { order: "asc" }
       },
       _count: { select: { books: true } }
