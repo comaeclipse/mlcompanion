@@ -26,6 +26,7 @@ model User {
   videos        Video[]
   books         Book[]
   authors       Author[]
+  channels      Channel[]
 }
 
 model Account {
@@ -83,7 +84,7 @@ model Video {
   url          String
   thumbnailUrl String?
   duration     String?
-  channelName  String?
+  channelName  String?  // Deprecated: kept for backwards compatibility
   publishedAt  DateTime?
 
   tags        String[]
@@ -94,8 +95,41 @@ model Video {
   createdBy   String
   creator     User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
+  channelId   String?
+  channel     Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
   @@index([createdBy])
   @@index([isPublished])
+  @@index([channelId])
+}
+
+model Channel {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  channelId     String   @unique  // YouTube channel ID (e.g., "UCxxx")
+  name          String
+  slug          String   @unique  // URL-friendly slug (e.g., "second-thought")
+  url           String?            // Full channel URL
+  description   String?  @db.Text
+  thumbnailUrl  String?
+  
+  subscriberCount Int?
+  videoCount      Int?
+  viewCount       Int?
+  
+  customUrl     String?  // YouTube custom URL (@handle)
+  country       String?
+  publishedAt   DateTime?
+
+  videos        Video[]
+  createdBy     String?
+  creator       User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([channelId])
+  @@index([slug])
+  @@index([createdBy])
 }
 
 model Book {
