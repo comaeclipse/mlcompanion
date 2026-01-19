@@ -222,7 +222,13 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
               <div style={{ position: "relative" }}>
                 {book.thumbnailUrl ? (
                   <img
-                    src={getProxiedImageUrl(book.thumbnailUrl, { width: 400, quality: 75 }) || book.thumbnailUrl}
+                    src={
+                      book.thumbnailUrl.includes('blob.vercel-storage.com') || 
+                      book.thumbnailUrl.startsWith('blob:') ||
+                      book.thumbnailUrl.startsWith('data:')
+                        ? book.thumbnailUrl 
+                        : getProxiedImageUrl(book.thumbnailUrl, { width: 400, quality: 75 }) || book.thumbnailUrl
+                    }
                     alt={book.title}
                     style={{
                       width: "100%",

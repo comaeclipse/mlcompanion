@@ -27,7 +27,14 @@ if (!book) {
   return new Response("Not found", { status: 404 });
 }
 
-const coverUrl = getProxiedImageUrl(book.thumbnailUrl, { width: 480, quality: 80 }) || book.thumbnailUrl;
+// Use direct blob URL without Vercel image optimization
+const coverUrl = book.thumbnailUrl && (
+  book.thumbnailUrl.includes('blob.vercel-storage.com') || 
+  book.thumbnailUrl.startsWith('blob:') ||
+  book.thumbnailUrl.startsWith('data:')
+) 
+  ? book.thumbnailUrl 
+  : getProxiedImageUrl(book.thumbnailUrl, { width: 480, quality: 80 }) || book.thumbnailUrl;
 const authorLabel = formatAuthors(book.authors);
 
 const formatCount = (value?: number | null) => {
@@ -121,7 +128,7 @@ const externalReviews = Array.isArray(book.externalReviews) ? book.externalRevie
 
     <section class="panel" style="margin-top: 1.5rem;">
       <h2>Description</h2>
-      <p style="white-space: pre-wrap; color: var(--muted-color); line-height: 1.7;">{book.description}</p>
+      <p style="white-space: pre-line; color: var(--muted-color); line-height: 1.7;">{book.description}</p>
     </section>
 
     {externalReviews.length > 0 && (

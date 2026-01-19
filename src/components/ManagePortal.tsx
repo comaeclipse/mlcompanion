@@ -386,10 +386,14 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     return (
       <div className="video-admin-list">
         {books.map((book) => {
-          const proxiedThumbnailUrl = getProxiedImageUrl(book.thumbnailUrl, {
-            width: 240,
-            quality: 75,
-          });
+          // Use direct blob URL without Vercel image optimization
+          const proxiedThumbnailUrl = book.thumbnailUrl && (
+            book.thumbnailUrl.includes('blob.vercel-storage.com') || 
+            book.thumbnailUrl.startsWith('blob:') ||
+            book.thumbnailUrl.startsWith('data:')
+          ) 
+            ? book.thumbnailUrl 
+            : getProxiedImageUrl(book.thumbnailUrl, { width: 240, quality: 75 });
 
           return (
             <div key={book.id} className="panel" style={{ padding: "0.75rem" }}>
@@ -679,7 +683,13 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
               <div style={{ flexShrink: 0, position: "relative" }}>
                 {author.photoUrl ? (
                   <img
-                    src={getProxiedImageUrl(author.photoUrl, { width: 200, quality: 75 }) || author.photoUrl}
+                    src={
+                      author.photoUrl.includes('blob.vercel-storage.com') || 
+                      author.photoUrl.startsWith('blob:') ||
+                      author.photoUrl.startsWith('data:')
+                        ? author.photoUrl 
+                        : getProxiedImageUrl(author.photoUrl, { width: 200, quality: 75 }) || author.photoUrl
+                    }
                     alt={author.name}
                     style={{
                       width: "100px",

@@ -209,7 +209,13 @@ export function AuthorForm({ author, onSuccess, onCancel }: AuthorFormProps) {
               Current Photo:
             </p>
             <img
-              src={getProxiedImageUrl(formData.photoUrl, { width: 200, quality: 75 }) || formData.photoUrl}
+              src={
+                formData.photoUrl.includes('blob.vercel-storage.com') || 
+                formData.photoUrl.startsWith('blob:') ||
+                formData.photoUrl.startsWith('data:')
+                  ? formData.photoUrl 
+                  : getProxiedImageUrl(formData.photoUrl, { width: 200, quality: 75 }) || formData.photoUrl
+              }
               alt="Author photo preview"
               style={{
                 width: "200px",
