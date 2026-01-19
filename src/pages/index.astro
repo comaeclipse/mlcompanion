@@ -114,24 +114,39 @@ const recentVideos = await prisma.video.findMany({
 
         <div class="resource-list">
           {recentVideos.length > 0 ? (
-            recentVideos.map((video) => (
-              <article class="resource">
-                <div class="resource-top">
-                  <h3>{video.title}</h3>
-                  <div class="resource-tags">
-                    {video.tags.slice(0, 3).map((tag: string) => (
-                      <span>{tag}</span>
-                    ))}
+            recentVideos.map((video) => {
+              const truncatedDesc = video.description 
+                ? (video.description.length > 180 
+                    ? video.description.substring(0, 180) + "..." 
+                    : video.description)
+                : "No description available.";
+              
+              return (
+                <article class="resource">
+                  {video.thumbnailUrl && (
+                    <img 
+                      src={video.thumbnailUrl} 
+                      alt={video.title}
+                      style="width: 100%; height: auto; border-radius: 4px; margin-bottom: 0.75rem;"
+                    />
+                  )}
+                  <div class="resource-top">
+                    <h3>{video.title}</h3>
+                    <div class="resource-tags">
+                      {video.tags.slice(0, 3).map((tag: string) => (
+                        <span>{tag}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <p>{video.description || "No description available."}</p>
-                <p class="resource-link">
-                  <a href={`/videos/${video.id}`} target="_blank">View Video</a>
-                  {video.channelName && ` • ${video.channelName}`}
-                  {video.duration && ` • ${video.duration}`}
-                </p>
-              </article>
-            ))
+                  <p>{truncatedDesc}</p>
+                  <p class="resource-link">
+                    <a href={`/videos/${video.id}`} target="_blank">View Video</a>
+                    {video.channelName && ` • ${video.channelName}`}
+                    {video.duration && ` • ${video.duration}`}
+                  </p>
+                </article>
+              );
+            })
           ) : (
             <article class="resource">
               <div class="resource-top">
