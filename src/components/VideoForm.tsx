@@ -22,6 +22,12 @@ interface VideoFormProps {
   onCancel: () => void;
 }
 
+interface Channel {
+  id: string;
+  name: string;
+  channelId: string;
+}
+
 export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
   const [formData, setFormData] = useState<Video>({
     title: "",
@@ -34,9 +40,27 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
     tags: [],
     category: "",
   });
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [metaLoading, setMetaLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Fetch available channels
+  useEffect(() => {
+    const fetchChannels = async () => {
+      try {
+        const response = await fetch("/api/channels");
+        if (response.ok) {
+          const data = await response.json();
+          setChannels(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch channels:", err);
+      }
+    };
+    void fetchChannels();
+  }, []);
 
   // Update form when video prop changes
   useEffect(() => {
@@ -181,12 +205,49 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Channel Name</label>
-        <Input
-          value={formData.channelName || ""}
-          onChange={(e) => setFormData({ ...formData, channelName: e.target.value })}
-          placeholder="Auto-filled from YouTube"
-        />
+        <label className="block text-sm font-medium mb-1">Channel</label>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          {channels.length > 0 && (
+            <select
+              value={selectedChannelId}
+              onChange={(e) => {
+                const channelId = e.target.value;
+                setSelectedChannelId(channelId);
+                if (channelId) {
+                  const channel = channels.find(c => c.id === channelId);
+                  if (channel) {
+                    setFormData({ ...formData, channelName: channel.name });
+                  }
+                }
+              }}
+              style={{
+                padding: "0.5rem",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+                background: "var(--paper-color)",
+                fontSize: "0.9rem",
+              }}
+            >
+              <option value="">Select existing channel or enter manually</option>
+              {channels.map((channel) => (
+                <option key={channel.id} value={channel.id}>
+                  {channel.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <Input
+            value={formData.channelName || ""}
+            onChange={(e) => {
+              setFormData({ ...formData, channelName: e.target.value });
+              setSelectedChannelId(""); // Clear selection if manually typing
+            }}
+            placeholder={channels.length > 0 ? "Or enter manually" : "Auto-filled from YouTube"}
+          />
+        </div>
+        <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.25rem" }}>
+          Select from existing channels or enter manually
+        </p>
       </div>
 
       <div>

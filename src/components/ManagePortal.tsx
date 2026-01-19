@@ -4,6 +4,7 @@ import { getProxiedImageUrl } from "../lib/image-utils";
 import { ManageBooksWrapper } from "./ManageBooksWrapper";
 import { ManageVideosWrapper } from "./ManageVideosWrapper";
 import { ManageAuthorsWrapper } from "./ManageAuthorsWrapper";
+import { ManageChannelsWrapper } from "./ManageChannelsWrapper";
 
 interface Book {
   id: string;
@@ -47,30 +48,55 @@ interface Author {
   };
 }
 
+interface Channel {
+  id: string;
+  channelId: string;
+  name: string;
+  slug: string;
+  url?: string | null;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  subscriberCount?: number | null;
+  videoCount?: number | null;
+  viewCount?: number | null;
+  customUrl?: string | null;
+  country?: string | null;
+  publishedAt?: Date | string | null;
+  _count?: {
+    videos: number;
+  };
+}
+
 interface ManagePortalProps {
-  initialTab: "books" | "videos" | "authors";
+  initialTab: "books" | "videos" | "authors" | "channels";
   initialBooks?: Book[] | null;
   initialVideos?: Video[] | null;
   initialAuthors?: Author[] | null;
+  initialChannels?: Channel[] | null;
 }
 
-export function ManagePortal({ initialTab, initialBooks, initialVideos, initialAuthors }: ManagePortalProps) {
-  const [activeTab, setActiveTab] = useState<"books" | "videos" | "authors">(initialTab);
+export function ManagePortal({ initialTab, initialBooks, initialVideos, initialAuthors, initialChannels }: ManagePortalProps) {
+  const [activeTab, setActiveTab] = useState<"books" | "videos" | "authors" | "channels">(initialTab);
   const [books, setBooks] = useState<Book[] | null>(initialBooks ?? null);
   const [videos, setVideos] = useState<Video[] | null>(initialVideos ?? null);
   const [authors, setAuthors] = useState<Author[] | null>(initialAuthors ?? null);
+  const [channels, setChannels] = useState<Channel[] | null>(initialChannels ?? null);
   const [booksLoading, setBooksLoading] = useState(false);
   const [videosLoading, setVideosLoading] = useState(false);
   const [authorsLoading, setAuthorsLoading] = useState(false);
+  const [channelsLoading, setChannelsLoading] = useState(false);
   const [booksError, setBooksError] = useState("");
   const [videosError, setVideosError] = useState("");
   const [authorsError, setAuthorsError] = useState("");
+  const [channelsError, setChannelsError] = useState("");
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [authorModalOpen, setAuthorModalOpen] = useState(false);
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
+  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
 
   const fetchBooks = async () => {
     setBooksLoading(true);
@@ -135,6 +161,27 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     }
   };
 
+  const fetchChannels = async () => {
+    setChannelsLoading(true);
+    setChannelsError("");
+    try {
+      const response = await fetch("/api/manage/channels", { credentials: "include" });
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Failed to load channels");
+      }
+      const data = await response.json();
+      setChannels(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setChannelsError("Failed to load channels. Please try again.");
+    } finally {
+      setChannelsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -160,14 +207,22 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     }
   }, [activeTab, authors, authorsLoading]);
 
-  const handleTabChange = (tab: "books" | "videos" | "authors") => {
+  useEffect(() => {
+    if (activeTab === "channels" && channels === null && !channelsLoading) {
+      void fetchChannels();
+    }
+  }, [activeTab, channels, channelsLoading]);
+
+  const handleTabChange = (tab: "books" | "videos" | "authors" | "channels") => {
     setActiveTab(tab);
     setBookModalOpen(false);
     setVideoModalOpen(false);
     setAuthorModalOpen(false);
+    setChannelModalOpen(false);
     setEditingBook(null);
     setEditingVideo(null);
     setEditingAuthor(null);
+    setEditingChannel(null);
   };
 
   const handleAddClick = () => {
@@ -179,6 +234,11 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     if (activeTab === "videos") {
       setEditingVideo(null);
       setVideoModalOpen(true);
+      return;
+    }
+    if (activeTab === "channels") {
+      setEditingChannel(null);
+      setChannelModalOpen(true);
       return;
     }
     setEditingAuthor(null);
@@ -260,6 +320,32 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
       alert(`Failed to delete author: ${data.error || "Unknown error"}`);
     } catch (err) {
       alert("Failed to delete author. Please try again.");
+    }
+  };
+
+  const handleEditChannel = (channelId: string) => {
+    const channel = channels?.find((item) => item.id === channelId);
+    if (channel) {
+      setEditingChannel(channel);
+      setChannelModalOpen(true);
+    }
+  };
+
+  const handleDeleteChannel = async (channelId: string) => {
+    if (!confirm("Are you sure you want to delete this channel?")) return;
+    try {
+      const response = await fetch(`/api/channels/${channelId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      alert(`Failed to delete channel: ${data.error || "Unknown error"}`);
+    } catch (err) {
+      alert("Failed to delete channel. Please try again.");
     }
   };
 
@@ -650,6 +736,110 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     );
   };
 
+  const renderChannels = () => {
+    if (channelsLoading) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">Loading channels...</p>
+        </div>
+      );
+    }
+
+    if (channelsError) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">{channelsError}</p>
+        </div>
+      );
+    }
+
+    if (!channels || channels.length === 0) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">No channels yet. Click "Add Channel" to get started!</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="video-admin-list">
+        {channels.map((channel) => (
+          <div key={channel.id} className="panel" style={{ padding: "0.75rem" }}>
+            <div style={{ display: "flex", gap: "1rem", alignItems: "start" }}>
+              <div style={{ flexShrink: 0, position: "relative" }}>
+                {channel.thumbnailUrl ? (
+                  <img
+                    src={channel.thumbnailUrl}
+                    alt={channel.name}
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                      border: "2px solid var(--border-color)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, var(--accent-color), #d4835f)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "2.5rem",
+                      fontWeight: 600,
+                      border: "2px solid var(--border-color)",
+                    }}
+                  >
+                    {channel.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1rem" }}>{channel.name}</h3>
+                <p className="muted" style={{ margin: "0 0 0.25rem 0", fontSize: "0.85rem" }}>
+                  {channel.channelId}
+                </p>
+                {channel._count && (
+                  <p className="muted" style={{ margin: "0 0 0.25rem 0", fontSize: "0.85rem" }}>
+                    {channel._count.videos} {channel._count.videos === 1 ? "video" : "videos"}
+                  </p>
+                )}
+                {channel.subscriberCount && (
+                  <p className="muted" style={{ margin: "0 0 0.25rem 0", fontSize: "0.85rem" }}>
+                    {channel.subscriberCount.toLocaleString()} subscribers
+                  </p>
+                )}
+                {channel.description && (
+                  <p
+                    className="muted"
+                    style={{ margin: "0", fontSize: "0.85rem", lineHeight: 1.4 }}
+                  >
+                    {channel.description.length > 120 ? `${channel.description.slice(0, 117)}...` : channel.description}
+                  </p>
+                )}
+              </div>
+
+              <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                <button className="button button-sm" onClick={() => handleEditChannel(channel.id)}>
+                  Edit
+                </button>
+                <button className="button button-sm button-danger" onClick={() => handleDeleteChannel(channel.id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="page">
       <header className="hero">
@@ -659,7 +849,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
             <p className="muted">Add, edit, and organize your books, videos, and authors</p>
           </div>
           <button className="button" onClick={handleAddClick}>
-            {activeTab === "books" ? "+ Add Book" : activeTab === "videos" ? "+ Add Video" : "+ Add Author"}
+            {activeTab === "books" ? "+ Add Book" : activeTab === "videos" ? "+ Add Video" : activeTab === "channels" ? "+ Add Channel" : "+ Add Author"}
           </button>
         </div>
 
@@ -688,6 +878,17 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
           </button>
           <button
             className="button"
+            onClick={() => handleTabChange("channels")}
+            style={
+              activeTab === "channels"
+                ? {}
+                : { background: "transparent", color: "var(--accent-color)", border: "1px solid var(--accent-color)" }
+            }
+          >
+            Channels
+          </button>
+          <button
+            className="button"
             onClick={() => handleTabChange("authors")}
             style={
               activeTab === "authors"
@@ -701,7 +902,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
       </header>
 
       <section>
-        {activeTab === "books" ? renderBooks() : activeTab === "videos" ? renderVideos() : renderAuthors()}
+        {activeTab === "books" ? renderBooks() : activeTab === "videos" ? renderVideos() : activeTab === "channels" ? renderChannels() : renderAuthors()}
       </section>
 
       <ManageBooksWrapper
@@ -718,6 +919,14 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
         onClose={() => {
           setVideoModalOpen(false);
           setEditingVideo(null);
+        }}
+      />
+      <ManageChannelsWrapper
+        channel={editingChannel}
+        isOpen={channelModalOpen}
+        onClose={() => {
+          setChannelModalOpen(false);
+          setEditingChannel(null);
         }}
       />
       <ManageAuthorsWrapper

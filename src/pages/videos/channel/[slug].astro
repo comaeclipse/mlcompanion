@@ -6,39 +6,46 @@ import { prisma } from "../../../lib/prisma";
 
 const { slug } = Astro.params;
 
-// Convert slug back to potential channel names (try different cases)
-const channelSearchTerm = slug?.replace(/-/g, " ") || "";
-
-// Find videos by channel name (case-insensitive search)
-const videos = await prisma.video.findMany({
-  where: {
-    isPublished: true,
-    channelName: {
-      mode: "insensitive",
-      equals: channelSearchTerm,
-    },
+// Try to find channel by slug
+const channel = await prisma.channel.findUnique({
+  where: { slug },
+  include: {
+    _count: { select: { videos: true } },
   },
-  orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
 });
 
-// If no videos found, try to find any channel that matches
-const allChannels = videos.length === 0
+// Find videos by channel reference or legacy channelName
+const videos = channel
   ? await prisma.video.findMany({
       where: {
         isPublished: true,
+        channelId: channel.id,
+      },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    })
+  : await prisma.video.findMany({
+      where: {
+        isPublished: true,
         channelName: {
-          not: null,
+          mode: "insensitive",
+          equals: slug?.replace(/-/g, " ") || "",
         },
       },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    });
+
+// Get other channels if no videos found
+const allChannels = videos.length === 0
+  ? await prisma.channel.findMany({
       select: {
-        channelName: true,
+        name: true,
+        slug: true,
       },
-      distinct: ["channelName"],
+      take: 10,
     })
   : [];
 
-// Get the actual channel name from the first video (for proper casing)
-const channelName = videos[0]?.channelName || channelSearchTerm;
+const channelName = channel?.name || videos[0]?.channelName || slug?.replace(/-/g, " ") || "";
 const videoCount = videos.length;
 ---
 
@@ -57,29 +64,68 @@ const videoCount = videos.length;
         style="display: flex; align-items: start; gap: 2rem; flex-wrap: wrap;"
       >
         {/* Channel Avatar */}
-        <div
-          style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-color), #d4835f); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; flex-shrink: 0;"
-        >
-          {channelName.charAt(0).toUpperCase()}
-        </div>
+        {channel?.thumbnailUrl ? (
+          <img
+            src={channel.thumbnailUrl}
+            alt={channelName}
+            style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border-color); flex-shrink: 0;"
+          />
+        ) : (
+          <div
+            style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-color), #d4835f); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; font-weight: 700; flex-shrink: 0;"
+          >
+            {channelName.charAt(0).toUpperCase()}
+          </div>
+        )}
 
         {/* Channel Info */}
         <div style="flex: 1; min-width: 250px;">
           <h1 style="margin-bottom: 0.5rem;">{channelName}</h1>
-          <p class="muted" style="margin: 0 0 1rem 0;">
-            {videoCount} {videoCount === 1 ? "video" : "videos"}
-          </p>
+          
+          <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+            {channel?.subscriberCount && (
+              <p class="muted" style="margin: 0; font-weight: 500;">
+                📊 {channel.subscriberCount.toLocaleString()} subscribers
+              </p>
+            )}
+            <p class="muted" style="margin: 0;">
+              🎥 {videoCount} {videoCount === 1 ? "video" : "videos"}
+            </p>
+            {channel?.viewCount && (
+              <p class="muted" style="margin: 0;">
+                👁️ {channel.viewCount.toLocaleString()} views
+              </p>
+            )}
+          </div>
+
+          {channel?.description && (
+            <p class="muted" style="margin: 0 0 1rem 0; line-height: 1.5;">
+              {channel.description.length > 200 ? channel.description.slice(0, 197) + "..." : channel.description}
+            </p>
+          )}
 
           <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(channelName)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="button"
-              style="text-decoration: none;"
-            >
-              🔍 Find on YouTube
-            </a>
+            {channel?.url ? (
+              <a
+                href={channel.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="button"
+                style="text-decoration: none;"
+              >
+                🔗 View on YouTube
+              </a>
+            ) : (
+              <a
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(channelName)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="button"
+                style="text-decoration: none;"
+              >
+                🔍 Find on YouTube
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -102,11 +148,11 @@ const videoCount = videos.length;
               >
                 {allChannels.slice(0, 10).map((ch) => (
                   <a
-                    href={`/videos/channel/${ch.channelName?.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
+                    href={`/videos/channel/${ch.slug}`}
                     class="pill"
                     style="text-decoration: none;"
                   >
-                    {ch.channelName}
+                    {ch.name}
                   </a>
                 ))}
               </div>
