@@ -44,6 +44,28 @@ export const PUT: APIRoute = async (context) => {
     });
   }
 
+  const parsedGoodreadsRating = body.goodreadsRating === "" || body.goodreadsRating === undefined || body.goodreadsRating === null
+    ? null
+    : Number(body.goodreadsRating);
+  if (parsedGoodreadsRating !== null && (Number.isNaN(parsedGoodreadsRating) || parsedGoodreadsRating < 0 || parsedGoodreadsRating > 5)) {
+    return new Response(JSON.stringify({ error: "Goodreads rating must be a number between 0 and 5" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const parsedGoodreadsReviews = body.goodreadsReviews === "" || body.goodreadsReviews === undefined || body.goodreadsReviews === null
+    ? null
+    : Number(body.goodreadsReviews);
+  if (parsedGoodreadsReviews !== null && (!Number.isFinite(parsedGoodreadsReviews) || parsedGoodreadsReviews < 0)) {
+    return new Response(JSON.stringify({ error: "Goodreads reviews must be a non-negative number" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const normalizedExternalReviews = Array.isArray(body.externalReviews) ? body.externalReviews : null;
+
   const book = await prisma.book.update({
     where: { id: params.id },
     data: {
@@ -63,6 +85,9 @@ export const PUT: APIRoute = async (context) => {
       tags: body.tags,
       readFreeLinks: body.readFreeLinks || [],
       purchaseLinks: body.purchaseLinks ? cleanPurchaseLinks(body.purchaseLinks) : null,
+      goodreadsRating: parsedGoodreadsRating,
+      goodreadsReviews: parsedGoodreadsReviews !== null ? Math.floor(parsedGoodreadsReviews) : null,
+      externalReviews: normalizedExternalReviews,
       isPublished: body.isPublished,
     },
   });

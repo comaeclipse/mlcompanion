@@ -153,6 +153,9 @@ model Book {
 
   readFreeLinks   String[]  @default([])
   purchaseLinks   Json?
+  goodreadsRating Float?
+  goodreadsReviews Int?
+  externalReviews Json?
 
   tags            String[]
   order           Int      @default(0)

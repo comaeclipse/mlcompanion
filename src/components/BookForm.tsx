@@ -1,8 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { getProxiedImageUrl } from "@/lib/image-utils";
+
+interface ExternalReview {
+  authorUsername: string;
+  reviewDate: string;
+  contentHtml: string;
+  score?: number;
+  sourceUrl: string;
+}
 
 interface Book {
   id?: string;
@@ -21,6 +29,9 @@ interface Book {
   infoLink?: string;
   tags: string[];
   readFreeLinks: string[];
+  goodreadsRating?: number;
+  goodreadsReviews?: number;
+  externalReviews?: ExternalReview[];
   purchaseLinks?: {
     amazon?: string;
     custom: Array<{ label: string; url: string }>;
@@ -50,6 +61,9 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
     infoLink: "",
     tags: [],
     readFreeLinks: [],
+    goodreadsRating: undefined,
+    goodreadsReviews: undefined,
+    externalReviews: [],
     purchaseLinks: {
       amazon: "",
       custom: [{ label: "", url: "" }, { label: "", url: "" }],
@@ -65,7 +79,16 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
   // Update form when book prop changes
   useEffect(() => {
     if (book) {
-      setFormData(book);
+      setFormData({
+        ...book,
+        goodreadsRating: book.goodreadsRating ?? undefined,
+        goodreadsReviews: book.goodreadsReviews ?? undefined,
+        externalReviews: Array.isArray(book.externalReviews) ? book.externalReviews : [],
+        purchaseLinks: book.purchaseLinks || {
+          amazon: "",
+          custom: [{ label: "", url: "" }, { label: "", url: "" }],
+        },
+      });
     } else {
       setFormData({
         title: "",
@@ -83,6 +106,9 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         infoLink: "",
         tags: [],
         readFreeLinks: [],
+        goodreadsRating: undefined,
+        goodreadsReviews: undefined,
+        externalReviews: [],
         purchaseLinks: {
           amazon: "",
           custom: [{ label: "", url: "" }, { label: "", url: "" }],
@@ -90,6 +116,36 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
       });
     }
   }, [book]);
+
+  const createEmptyReview = (): ExternalReview => ({
+    authorUsername: "",
+    reviewDate: "",
+    contentHtml: "",
+    score: undefined,
+    sourceUrl: "",
+  });
+
+  const updateReview = (index: number, updates: Partial<ExternalReview>) => {
+    setFormData((prev) => {
+      const reviews = prev.externalReviews ? [...prev.externalReviews] : [];
+      reviews[index] = { ...reviews[index], ...updates };
+      return { ...prev, externalReviews: reviews };
+    });
+  };
+
+  const addReview = () => {
+    setFormData((prev) => ({
+      ...prev,
+      externalReviews: [...(prev.externalReviews || []), createEmptyReview()],
+    }));
+  };
+
+  const removeReview = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      externalReviews: (prev.externalReviews || []).filter((_, idx) => idx !== index),
+    }));
+  };
 
   const fetchMetadata = async () => {
     const query = searchQuery.trim();
@@ -430,6 +486,134 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         />
       </div>
 
+      <div style={{ background: "rgba(156, 92, 46, 0.08)", padding: "1rem", borderRadius: "8px" }}>
+        <label className="block text-sm font-medium mb-2">
+          Goodreads Score (optional)
+        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <div>
+            <label className="block text-sm font-medium mb-1">Rating (0-5)</label>
+            <Input
+              type="number"
+              step="0.1"
+              min="0"
+              max="5"
+              value={formData.goodreadsRating ?? ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({
+                  ...formData,
+                  goodreadsRating: value === "" ? undefined : parseFloat(value),
+                });
+              }}
+              placeholder="4.2"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Review Count</label>
+            <Input
+              type="number"
+              min="0"
+              value={formData.goodreadsReviews ?? ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFormData({
+                  ...formData,
+                  goodreadsReviews: value === "" ? undefined : parseInt(value, 10),
+                });
+              }}
+              placeholder="2000"
+            />
+          </div>
+        </div>
+        <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.5rem" }}>
+          Example display: 4.2 / 2,000 reviews
+        </p>
+      </div>
+
+      <div style={{ background: "rgba(102, 126, 234, 0.08)", padding: "1rem", borderRadius: "8px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+          <label className="block text-sm font-medium">External Reviews</label>
+          <Button type="button" variant="secondary" onClick={addReview}>
+            + Add Review
+          </Button>
+        </div>
+        {(formData.externalReviews || []).length === 0 ? (
+          <p style={{ fontSize: "0.85rem", color: "var(--muted-color)", marginTop: "0.5rem" }}>
+            Add credited reviews with author, date, score, and source link.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1rem" }}>
+            {(formData.externalReviews || []).map((review, index) => (
+              <div
+                key={`review-${index}`}
+                style={{
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  background: "var(--paper-color)",
+                }}
+              >
+                <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Author Username</label>
+                    <Input
+                      value={review.authorUsername}
+                      onChange={(e) => updateReview(index, { authorUsername: e.target.value })}
+                      placeholder="reviewer123"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Review Date</label>
+                    <Input
+                      type="date"
+                      value={review.reviewDate}
+                      onChange={(e) => updateReview(index, { reviewDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Score (0-5)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      value={review.score ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        updateReview(index, { score: value === "" ? undefined : parseFloat(value) });
+                      }}
+                      placeholder="4.5"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Source Link</label>
+                    <Input
+                      type="url"
+                      value={review.sourceUrl}
+                      onChange={(e) => updateReview(index, { sourceUrl: e.target.value })}
+                      placeholder="https://example.com/review"
+                    />
+                  </div>
+                </div>
+                <label className="block text-sm font-medium mb-1">Review Content</label>
+                <WysiwygEditor
+                  value={review.contentHtml}
+                  onChange={(value) => updateReview(index, { contentHtml: value })}
+                />
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+                  <Button type="button" variant="outline" onClick={() => removeReview(index)}>
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Read Free Links Section */}
       <div style={{ background: "rgba(46, 204, 113, 0.08)", padding: "1rem", borderRadius: "8px" }}>
         <label className="block text-sm font-medium mb-2">
@@ -564,5 +748,68 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+interface WysiwygEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function WysiwygEditor({ value, onChange }: WysiwygEditorProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  const emitChange = () => {
+    onChange(editorRef.current?.innerHTML || "");
+  };
+
+  const exec = (command: string, commandValue?: string) => {
+    document.execCommand(command, false, commandValue);
+    emitChange();
+    editorRef.current?.focus();
+  };
+
+  const handleLink = () => {
+    const url = window.prompt("Enter link URL");
+    if (url) {
+      exec("createLink", url);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+        <Button type="button" variant="outline" onClick={() => exec("bold")}>B</Button>
+        <Button type="button" variant="outline" onClick={() => exec("italic")}>I</Button>
+        <Button type="button" variant="outline" onClick={() => exec("underline")}>U</Button>
+        <Button type="button" variant="outline" onClick={() => exec("insertUnorderedList")}>Bullets</Button>
+        <Button type="button" variant="outline" onClick={() => exec("insertOrderedList")}>Numbered</Button>
+        <Button type="button" variant="outline" onClick={handleLink}>Link</Button>
+        <Button type="button" variant="outline" onClick={() => exec("unlink")}>Unlink</Button>
+      </div>
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={emitChange}
+        onBlur={emitChange}
+        style={{
+          minHeight: "140px",
+          border: "1px solid var(--border-color)",
+          borderRadius: "8px",
+          padding: "0.75rem",
+          background: "#fff",
+          color: "var(--ink-color)",
+          fontFamily: "\"Work Sans\", \"Segoe UI\", sans-serif",
+          lineHeight: 1.6,
+        }}
+      />
+    </div>
   );
 }

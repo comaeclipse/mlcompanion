@@ -22,6 +22,15 @@ interface Book {
   previewLink?: string | null;
   infoLink?: string | null;
   tags: string[];
+  goodreadsRating?: number | null;
+  goodreadsReviews?: number | null;
+  externalReviews?: Array<{
+    authorUsername: string;
+    reviewDate: string;
+    contentHtml: string;
+    score?: number;
+    sourceUrl: string;
+  }>;
 }
 
 interface Video {

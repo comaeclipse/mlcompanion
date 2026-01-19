@@ -15,6 +15,15 @@ interface Book {
   pageCount?: number | null;
   categories: string[];
   tags: string[];
+  goodreadsRating?: number | null;
+  goodreadsReviews?: number | null;
+  externalReviews?: Array<{
+    authorUsername: string;
+    reviewDate: string;
+    contentHtml: string;
+    score?: number;
+    sourceUrl: string;
+  }> | null;
 }
 
 interface BookLibraryProps {
@@ -24,6 +33,10 @@ interface BookLibraryProps {
 export function BookLibrary({ books }: BookLibraryProps) {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const selectedCoverUrl = getProxiedImageUrl(selectedBook?.thumbnailUrl, { width: 400, quality: 80 });
+  const formatCount = (value?: number | null) => {
+    if (value === null || value === undefined) return "";
+    return value.toLocaleString();
+  };
 
   return (
     <>
@@ -126,6 +139,15 @@ export function BookLibrary({ books }: BookLibraryProps) {
                     {selectedBook.isbn && `ISBN-10: ${selectedBook.isbn}`}
                   </p>
                 )}
+                {(selectedBook.goodreadsRating !== null && selectedBook.goodreadsRating !== undefined) ||
+                (selectedBook.goodreadsReviews !== null && selectedBook.goodreadsReviews !== undefined) ? (
+                  <p style={{ fontSize: "0.85rem", color: "var(--muted-color)", margin: "0 0 1rem 0" }}>
+                    Goodreads: {selectedBook.goodreadsRating ?? "N/A"}
+                    {selectedBook.goodreadsReviews !== null && selectedBook.goodreadsReviews !== undefined
+                      ? ` / ${formatCount(selectedBook.goodreadsReviews)} reviews`
+                      : ""}
+                  </p>
+                ) : null}
                 
                 {/* Tags and Categories */}
                 {(selectedBook.tags.length > 0 || selectedBook.categories.length > 0) && (
@@ -175,6 +197,63 @@ export function BookLibrary({ books }: BookLibraryProps) {
               <h3 style={{ marginTop: 0 }}>Description</h3>
               <p style={{ whiteSpace: "pre-wrap" }}>{selectedBook.description}</p>
             </div>
+
+            {Array.isArray(selectedBook.externalReviews) && selectedBook.externalReviews.length > 0 && (
+              <div style={{
+                marginTop: "1.5rem",
+                paddingTop: "1.5rem",
+                borderTop: "1px solid var(--border-color)"
+              }}>
+                <h3 style={{ marginTop: 0 }}>External Reviews</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {selectedBook.externalReviews.map((review, index) => (
+                    <div key={`review-${index}`} style={{ background: "#fbf7f1", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "1rem" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "baseline" }}>
+                        <strong>{review.authorUsername || "Anonymous"}</strong>
+                        {review.reviewDate && (
+                          <span style={{ fontSize: "0.85rem", color: "var(--muted-color)" }}>
+                            {review.reviewDate}
+                          </span>
+                        )}
+                        {review.score !== undefined && review.score !== null && (
+                          <span style={{ fontSize: "0.85rem", color: "var(--muted-color)" }}>
+                            Score: {review.score}
+                          </span>
+                        )}
+                        {review.sourceUrl && (
+                          <a
+                            href={review.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: "0.85rem",
+                              color: "var(--accent-color)",
+                              textDecoration: "none",
+                              borderBottom: "1px solid transparent",
+                              transition: "border-color 0.15s",
+                            }}
+                            onMouseEnter={(e) => {
+                              (e.target as HTMLElement).style.borderBottomColor = "var(--accent-color)";
+                            }}
+                            onMouseLeave={(e) => {
+                              (e.target as HTMLElement).style.borderBottomColor = "transparent";
+                            }}
+                          >
+                            Source
+                          </a>
+                        )}
+                      </div>
+                      {review.contentHtml && (
+                        <div
+                          style={{ marginTop: "0.75rem", color: "var(--muted-color)" }}
+                          dangerouslySetInnerHTML={{ __html: review.contentHtml }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: "0.5rem", marginTop: "1.5rem" }}>
               <button
