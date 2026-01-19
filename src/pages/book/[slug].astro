@@ -44,7 +44,25 @@ const getDomain = (url: string) => {
   }
 };
 
-const externalReviews = Array.isArray(book.externalReviews) ? book.externalReviews : [];
+// Type definition for purchase links JSON structure
+interface PurchaseLinks {
+  amazon?: string;
+  custom?: Array<{ label?: string; url?: string }>;
+}
+
+// Type definition for external reviews JSON structure
+interface ExternalReview {
+  authorUsername?: string;
+  reviewDate?: string;
+  score?: number;
+  sourceUrl?: string;
+  contentHtml?: string;
+}
+
+const purchaseLinks = book.purchaseLinks as PurchaseLinks | null;
+const externalReviews = Array.isArray(book.externalReviews) 
+  ? (book.externalReviews as ExternalReview[]) 
+  : [];
 
 const stripInlineStyles = (html: string) => {
   // Remove inline style attributes and strip out excessive formatting
@@ -80,7 +98,7 @@ const stripInlineStyles = (html: string) => {
           )}
 
           {/* Availability Section */}
-          {(book.readFreeLinks?.length > 0 || book.purchaseLinks) && (
+          {(book.readFreeLinks?.length > 0 || purchaseLinks) && (
             <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); width: 220px;">
               {/* Read Free Links */}
               {book.readFreeLinks && book.readFreeLinks.length > 0 && (
@@ -105,17 +123,17 @@ const stripInlineStyles = (html: string) => {
               )}
 
               {/* Purchase Links */}
-              {book.purchaseLinks && (() => {
+              {purchaseLinks && (() => {
                 const links = [];
 
-                if (book.purchaseLinks?.amazon) {
+                if (purchaseLinks.amazon) {
                   links.push({
-                    url: book.purchaseLinks.amazon,
-                    domain: getDomain(book.purchaseLinks.amazon),
+                    url: purchaseLinks.amazon,
+                    domain: getDomain(purchaseLinks.amazon),
                   });
                 }
 
-                book.purchaseLinks?.custom?.forEach((custom: { label?: string; url?: string }) => {
+                purchaseLinks.custom?.forEach((custom) => {
                   if (custom.url) {
                     links.push({
                       url: custom.url,
