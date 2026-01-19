@@ -177,7 +177,7 @@ const externalReviews = Array.isArray(book.externalReviews) ? book.externalRevie
         )}
 
         {book.purchaseLinks && (() => {
-          const links: Array<{ url: string; domain: string }> = [];
+          const links = [];
 
           if (book.purchaseLinks?.amazon) {
             links.push({
