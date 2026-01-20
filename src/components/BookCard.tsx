@@ -307,7 +307,7 @@ export function BookCard({ book, onClick }: BookCardProps) {
               }}
             >
               {tag}
-            </span>
+            </a>
           ))}
 
           {/* "+X more" counter */}
