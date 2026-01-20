@@ -4,6 +4,13 @@ import Breadcrumb from "../../components/Breadcrumb.astro";
 import { prisma } from "../../lib/prisma";
 import { formatAuthors, slugifyTitle } from "../../lib/book-utils";
 import { getProxiedImageUrl } from "../../lib/image-utils";
+import {
+  SOURCE_TYPE_LABELS,
+  FUNCTION_LABELS,
+  DIFFICULTY_LABELS,
+  TRADITION_LABELS,
+  getFacetColor,
+} from "../../lib/book-facets";
 
 const { slug } = Astro.params;
 
@@ -224,6 +231,76 @@ const stripInlineStyles = (html: string) => {
       <h2>Description</h2>
       <p style="white-space: pre-line; color: var(--muted-color); line-height: 1.7;">{book.description}</p>
     </section>
+
+    {/* Classification Panel */}
+    {(book.sourceType || book.difficulty || book.functions?.length > 0 || book.traditions?.length > 0) && (
+      <section class="panel" style="margin-top: 1.5rem;">
+        <h2>Classification</h2>
+        <dl style="display: grid; grid-template-columns: auto 1fr; gap: 0.75rem 1.5rem; align-items: start;">
+          {book.sourceType && (
+            <>
+              <dt style="font-weight: 600; color: var(--ink-color);">Type:</dt>
+              <dd style="margin: 0;">
+                <span
+                  class="badge"
+                  style={`background: ${getFacetColor("sourceType", book.sourceType).bg}; color: ${getFacetColor("sourceType", book.sourceType).text}; border-color: ${getFacetColor("sourceType", book.sourceType).text}33;`}
+                >
+                  {SOURCE_TYPE_LABELS[book.sourceType]}
+                </span>
+              </dd>
+            </>
+          )}
+
+          {book.difficulty && (
+            <>
+              <dt style="font-weight: 600; color: var(--ink-color);">Difficulty:</dt>
+              <dd style="margin: 0;">
+                <span
+                  class="badge"
+                  style={`background: ${getFacetColor("difficulty", book.difficulty).bg}; color: ${getFacetColor("difficulty", book.difficulty).text}; border-color: ${getFacetColor("difficulty", book.difficulty).text}33;`}
+                >
+                  {DIFFICULTY_LABELS[book.difficulty]}
+                </span>
+              </dd>
+            </>
+          )}
+
+          {book.functions && book.functions.length > 0 && (
+            <>
+              <dt style="font-weight: 600; color: var(--ink-color);">Function:</dt>
+              <dd style="margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {book.functions.map((func) => (
+                  <span
+                    key={func}
+                    class="badge"
+                    style={`background: ${getFacetColor("function", func).bg}; color: ${getFacetColor("function", func).text}; border-color: ${getFacetColor("function", func).text}33;`}
+                  >
+                    {FUNCTION_LABELS[func]}
+                  </span>
+                ))}
+              </dd>
+            </>
+          )}
+
+          {book.traditions && book.traditions.length > 0 && (
+            <>
+              <dt style="font-weight: 600; color: var(--ink-color);">Tradition:</dt>
+              <dd style="margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {book.traditions.map((trad) => (
+                  <span
+                    key={trad}
+                    class="badge"
+                    style={`background: ${getFacetColor("tradition", trad).bg}; color: ${getFacetColor("tradition", trad).text}; border-color: ${getFacetColor("tradition", trad).text}33;`}
+                  >
+                    {TRADITION_LABELS[trad]}
+                  </span>
+                ))}
+              </dd>
+            </>
+          )}
+        </dl>
+      </section>
+    )}
 
     {externalReviews.length > 0 && (
       <section class="panel" style="margin-top: 1.5rem;">

@@ -3,6 +3,12 @@ import Layout from "../../layouts/Layout.astro";
 import Breadcrumb from "../../components/Breadcrumb.astro";
 import { prisma } from "../../lib/prisma";
 import { formatAuthors, slugifyTitle } from "../../lib/book-utils";
+import {
+  SOURCE_TYPE_LABELS,
+  FUNCTION_LABELS,
+  DIFFICULTY_LABELS,
+  TRADITION_LABELS,
+} from "../../lib/book-facets";
 
 const { slug } = Astro.params;
 
@@ -30,22 +36,47 @@ const videos = await prisma.video.findMany({
   },
 });
 
-// Find all books with this tag (search both tags and categories)
+// Convert slug to possible facet enum values
+const slugifiedLabels = {
+  sourceTypes: Object.entries(SOURCE_TYPE_LABELS)
+    .filter(([_, label]) => slugifyTitle(label) === slug)
+    .map(([value]) => value),
+  functions: Object.entries(FUNCTION_LABELS)
+    .filter(([_, label]) => slugifyTitle(label) === slug)
+    .map(([value]) => value),
+  difficulties: Object.entries(DIFFICULTY_LABELS)
+    .filter(([_, label]) => slugifyTitle(label) === slug)
+    .map(([value]) => value),
+  traditions: Object.entries(TRADITION_LABELS)
+    .filter(([_, label]) => slugifyTitle(label) === slug)
+    .map(([value]) => value),
+};
+
+// Build OR clauses for book query (tags, categories, AND facets)
+const bookOrClauses: any[] = [
+  { tags: { hasSome: [tagName] } },
+  { categories: { hasSome: [tagName] } },
+];
+
+// Add facet matches
+if (slugifiedLabels.sourceTypes.length > 0) {
+  bookOrClauses.push({ sourceType: { in: slugifiedLabels.sourceTypes } });
+}
+if (slugifiedLabels.functions.length > 0) {
+  bookOrClauses.push({ functions: { hasSome: slugifiedLabels.functions } });
+}
+if (slugifiedLabels.difficulties.length > 0) {
+  bookOrClauses.push({ difficulty: { in: slugifiedLabels.difficulties } });
+}
+if (slugifiedLabels.traditions.length > 0) {
+  bookOrClauses.push({ traditions: { hasSome: slugifiedLabels.traditions } });
+}
+
+// Find all books with this tag/category/facet
 const books = await prisma.book.findMany({
   where: {
     isPublished: true,
-    OR: [
-      {
-        tags: {
-          hasSome: [tagName],
-        },
-      },
-      {
-        categories: {
-          hasSome: [tagName],
-        },
-      },
-    ],
+    OR: bookOrClauses,
   },
   orderBy: [{ order: "asc" }, { createdAt: "desc" }],
 });

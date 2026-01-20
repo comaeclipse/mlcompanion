@@ -3,6 +3,16 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { getProxiedImageUrl } from "@/lib/image-utils";
+import {
+  SOURCE_TYPE_LABELS,
+  FUNCTION_LABELS,
+  DIFFICULTY_LABELS,
+  TRADITION_LABELS,
+  SOURCE_TYPE_DESCRIPTIONS,
+  FUNCTION_DESCRIPTIONS,
+  DIFFICULTY_DESCRIPTIONS,
+  TRADITION_DESCRIPTIONS,
+} from "@/lib/book-facets";
 
 interface ExternalReview {
   authorUsername: string;
@@ -36,6 +46,11 @@ interface Book {
     amazon?: string;
     custom: Array<{ label: string; url: string }>;
   };
+  // Faceted classification fields
+  sourceType?: string;
+  functions?: string[];
+  difficulty?: string;
+  traditions?: string[];
 }
 
 interface BookFormProps {
@@ -68,6 +83,10 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
       amazon: "",
       custom: [{ label: "", url: "" }, { label: "", url: "" }],
     },
+    sourceType: undefined,
+    functions: [],
+    difficulty: undefined,
+    traditions: [],
   });
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -113,6 +132,10 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
           amazon: "",
           custom: [{ label: "", url: "" }, { label: "", url: "" }],
         },
+        sourceType: undefined,
+        functions: [],
+        difficulty: undefined,
+        traditions: [],
       });
     }
   }, [book]);
@@ -455,7 +478,12 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Categories (comma-separated)</label>
+        <label className="block text-sm font-medium mb-1">
+          Categories (comma-separated)
+          <span style={{ fontWeight: "normal", fontSize: "0.85rem", color: "var(--muted-color)", marginLeft: "0.5rem" }}>
+            — For metadata compatibility (optional)
+          </span>
+        </label>
         <Input
           value={formData.categories.join(", ")}
           onChange={(e) =>
@@ -474,6 +502,121 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
           }
           placeholder="marxism, theory, economics"
         />
+      </div>
+
+      {/* Faceted Classification Section */}
+      <div style={{ background: "rgba(102, 126, 234, 0.08)", padding: "1.5rem", borderRadius: "12px", marginTop: "1rem" }}>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "1rem" }}>
+          Classification
+        </h3>
+        <p style={{ fontSize: "0.85rem", color: "var(--muted-color)", marginBottom: "1rem" }}>
+          Help readers find this book by classifying it across multiple dimensions.
+        </p>
+
+        {/* Source Type and Difficulty (side by side) */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Source Type * <span style={{ fontWeight: "normal", color: "var(--muted-color)" }}>(required)</span>
+            </label>
+            <select
+              value={formData.sourceType || ""}
+              onChange={(e) => setFormData({ ...formData, sourceType: e.target.value || undefined })}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color)",
+                background: "var(--paper-color)",
+              }}
+            >
+              <option value="">Select source type...</option>
+              {Object.entries(SOURCE_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.25rem" }}>
+              {formData.sourceType && SOURCE_TYPE_DESCRIPTIONS[formData.sourceType as keyof typeof SOURCE_TYPE_DESCRIPTIONS]}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Difficulty Level</label>
+            <select
+              value={formData.difficulty || ""}
+              onChange={(e) => setFormData({ ...formData, difficulty: e.target.value || undefined })}
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color)",
+                background: "var(--paper-color)",
+              }}
+            >
+              <option value="">Not specified</option>
+              {Object.entries(DIFFICULTY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.25rem" }}>
+              {formData.difficulty && DIFFICULTY_DESCRIPTIONS[formData.difficulty as keyof typeof DIFFICULTY_DESCRIPTIONS]}
+            </p>
+          </div>
+        </div>
+
+        {/* Function (checkboxes) */}
+        <div style={{ marginBottom: "1rem" }}>
+          <label className="block text-sm font-medium mb-2">
+            Function <span style={{ fontWeight: "normal", color: "var(--muted-color)" }}>(select all that apply)</span>
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.5rem" }}>
+            {Object.entries(FUNCTION_LABELS).map(([value, label]) => (
+              <label key={value} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.functions?.includes(value) || false}
+                  onChange={(e) => {
+                    const newFunctions = e.target.checked
+                      ? [...(formData.functions || []), value]
+                      : (formData.functions || []).filter((f) => f !== value);
+                    setFormData({ ...formData, functions: newFunctions });
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                <span style={{ fontSize: "0.875rem" }}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Tradition (checkboxes) */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Tradition <span style={{ fontWeight: "normal", color: "var(--muted-color)" }}>(optional)</span>
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.5rem" }}>
+            {Object.entries(TRADITION_LABELS).map(([value, label]) => (
+              <label key={value} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={formData.traditions?.includes(value) || false}
+                  onChange={(e) => {
+                    const newTraditions = e.target.checked
+                      ? [...(formData.traditions || []), value]
+                      : (formData.traditions || []).filter((t) => t !== value);
+                    setFormData({ ...formData, traditions: newTraditions });
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                <span style={{ fontSize: "0.875rem" }}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div>

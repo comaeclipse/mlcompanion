@@ -1,5 +1,12 @@
 import { formatAuthors } from "@/lib/book-utils";
 import { getProxiedImageUrl } from "@/lib/image-utils";
+import {
+  SOURCE_TYPE_LABELS,
+  FUNCTION_LABELS,
+  DIFFICULTY_LABELS,
+  TRADITION_LABELS,
+  getFacetColor,
+} from "@/lib/book-facets";
 
 interface Book {
   id: string;
@@ -19,6 +26,11 @@ interface Book {
     amazon?: string;
     custom?: Array<{ label: string; url: string }>;
   } | null;
+  // Faceted classification fields
+  sourceType?: string | null;
+  functions?: string[];
+  difficulty?: string | null;
+  traditions?: string[];
 }
 
 interface BookCardProps {
@@ -196,63 +208,130 @@ export function BookCard({ book, onClick }: BookCardProps) {
           {shortDesc}
         </p>
 
-        {/* Tags and Categories */}
-        {(book.tags.length > 0 || book.categories.length > 0) && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
-            {book.tags.slice(0, 3).map((tag) => (
-              <a
-                key={tag}
-                href={`/books/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`}
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  fontSize: "0.7rem",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  background: "rgba(156, 92, 46, 0.12)",
-                  color: "var(--accent-color)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                  textDecoration: "none",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.target as HTMLElement).style.background = "rgba(156, 92, 46, 0.25)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLElement).style.background = "rgba(156, 92, 46, 0.12)";
-                }}
-              >
-                {tag}
-              </a>
-            ))}
-            {book.categories.slice(0, 2).map((category) => (
-              <span
-                key={category}
-                style={{
-                  fontSize: "0.7rem",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  background: "rgba(102, 126, 234, 0.12)",
-                  color: "#667eea",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                }}
-              >
-                {category}
+        {/* Facet Badges */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+          {/* Source Type */}
+          {book.sourceType && (
+            <span
+              style={{
+                fontSize: "0.7rem",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                background: getFacetColor("sourceType", book.sourceType).bg,
+                color: getFacetColor("sourceType", book.sourceType).text,
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+                fontWeight: 600,
+              }}
+            >
+              {SOURCE_TYPE_LABELS[book.sourceType as keyof typeof SOURCE_TYPE_LABELS]}
+            </span>
+          )}
+
+          {/* Difficulty */}
+          {book.difficulty && (
+            <span
+              style={{
+                fontSize: "0.7rem",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                background: getFacetColor("difficulty", book.difficulty).bg,
+                color: getFacetColor("difficulty", book.difficulty).text,
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+                fontWeight: 600,
+              }}
+            >
+              {DIFFICULTY_LABELS[book.difficulty as keyof typeof DIFFICULTY_LABELS]}
+            </span>
+          )}
+
+          {/* Functions (show up to 2) */}
+          {book.functions?.slice(0, 2).map((func) => (
+            <span
+              key={func}
+              style={{
+                fontSize: "0.7rem",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                background: getFacetColor("function", func).bg,
+                color: getFacetColor("function", func).text,
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              {FUNCTION_LABELS[func as keyof typeof FUNCTION_LABELS]}
+            </span>
+          ))}
+
+          {/* Traditions (show up to 1) */}
+          {book.traditions?.slice(0, 1).map((trad) => (
+            <span
+              key={trad}
+              style={{
+                fontSize: "0.7rem",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                background: getFacetColor("tradition", trad).bg,
+                color: getFacetColor("tradition", trad).text,
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              {TRADITION_LABELS[trad as keyof typeof TRADITION_LABELS]}
+            </span>
+          ))}
+
+          {/* User Tags (show up to 2) */}
+          {book.tags.slice(0, 2).map((tag) => (
+            <a
+              key={tag}
+              href={`/topic/${tag.toLowerCase().replace(/\s+/g, "-")}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                fontSize: "0.7rem",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                background: "rgba(156, 92, 46, 0.12)",
+                color: "var(--accent-color)",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+                textDecoration: "none",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.background = "rgba(156, 92, 46, 0.25)";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.background = "rgba(156, 92, 46, 0.12)";
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+
+          {/* "+X more" counter */}
+          {(() => {
+            const totalFacets =
+              (book.sourceType ? 1 : 0) +
+              (book.difficulty ? 1 : 0) +
+              (book.functions?.length || 0) +
+              (book.traditions?.length || 0) +
+              book.tags.length;
+            const shownFacets =
+              (book.sourceType ? 1 : 0) +
+              (book.difficulty ? 1 : 0) +
+              Math.min(book.functions?.length || 0, 2) +
+              Math.min(book.traditions?.length || 0, 1) +
+              Math.min(book.tags.length, 2);
+
+            return totalFacets > shownFacets ? (
+              <span style={{ fontSize: "0.7rem", color: "var(--muted-color)" }}>
+                +{totalFacets - shownFacets}
               </span>
-            ))}
-            {(book.tags.length + book.categories.length) > 5 && (
-              <span
-                style={{
-                  fontSize: "0.7rem",
-                  color: "var(--muted-color)",
-                }}
-              >
-                +{(book.tags.length + book.categories.length) - 5}
-              </span>
-            )}
-          </div>
-        )}
+            ) : null;
+          })()}
+        </div>
       </div>
     </div>
   );
