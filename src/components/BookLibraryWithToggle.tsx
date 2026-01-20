@@ -1,8 +1,10 @@
 import { useState, useEffect, type KeyboardEvent } from "react";
 import { LayoutList, Grid2x2, ArrowUpAZ, ArrowDownAZ, CalendarArrowDown, CalendarArrowUp } from "lucide-react";
 import { BookCard } from "./BookCard";
+import { BookFilters, type BookFilters as BookFiltersType } from "./BookFilters";
 import { slugifyTitle } from "@/lib/book-utils";
 import { getProxiedImageUrl } from "@/lib/image-utils";
+import type { BookSourceType, BookFunction, BookDifficulty, BookTradition } from "@/lib/book-facets";
 
 interface Book {
   id: string;
@@ -31,6 +33,11 @@ interface Book {
     amazon?: string;
     custom?: Array<{ label: string; url: string }>;
   } | null;
+  // Faceted classification fields
+  sourceType?: BookSourceType | null;
+  functions?: BookFunction[];
+  difficulty?: BookDifficulty | null;
+  traditions?: BookTradition[];
 }
 
 interface BookLibraryWithToggleProps {
@@ -41,6 +48,12 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [sortBy, setSortBy] = useState<"title" | "date">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [filters, setFilters] = useState<BookFiltersType>({
+    sourceType: null,
+    functions: [],
+    difficulty: null,
+    traditions: [],
+  });
 
   // Load view preference from localStorage
   useEffect(() => {
@@ -71,8 +84,43 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
     }
   };
 
+  // Filter books
+  const filteredBooks = books.filter((book) => {
+    // Filter by source type
+    if (filters.sourceType && book.sourceType !== filters.sourceType) {
+      return false;
+    }
+
+    // Filter by difficulty
+    if (filters.difficulty && book.difficulty !== filters.difficulty) {
+      return false;
+    }
+
+    // Filter by functions (book must have at least one selected function)
+    if (filters.functions.length > 0) {
+      const hasMatchingFunction = filters.functions.some(
+        (fn) => book.functions?.includes(fn)
+      );
+      if (!hasMatchingFunction) {
+        return false;
+      }
+    }
+
+    // Filter by traditions (book must have at least one selected tradition)
+    if (filters.traditions.length > 0) {
+      const hasMatchingTradition = filters.traditions.some(
+        (tr) => book.traditions?.includes(tr)
+      );
+      if (!hasMatchingTradition) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
   // Sort books
-  const sortedBooks = [...books].sort((a, b) => {
+  const sortedBooks = [...filteredBooks].sort((a, b) => {
     if (sortBy === "title") {
       const comparison = a.title.localeCompare(b.title);
       return sortOrder === "asc" ? comparison : -comparison;
@@ -94,6 +142,9 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
 
   return (
     <>
+      {/* Filter Panel */}
+      <BookFilters activeFilters={filters} onFilterChange={setFilters} />
+
       {/* View Toggle and Sort Controls */}
       <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", marginBottom: "1rem" }}>
         {/* Sort by Title */}

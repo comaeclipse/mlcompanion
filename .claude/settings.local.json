@@ -63,7 +63,9 @@
       "Bash(git reset:*)",
       "mcp__plugin_serena_serena__find_symbol",
       "Bash(npx prisma db push)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "WebFetch(domain:mlcompanion.vercel.app)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

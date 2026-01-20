@@ -5,6 +5,9 @@
 
 import type { BookSourceType, BookFunction, BookDifficulty, BookTradition } from "../generated/prisma/client";
 
+// Re-export types for convenience
+export type { BookSourceType, BookFunction, BookDifficulty, BookTradition } from "../generated/prisma/client";
+
 // Source Type Labels
 export const SOURCE_TYPE_LABELS: Record<BookSourceType, string> = {
   primary: "Primary Source",
