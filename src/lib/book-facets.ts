@@ -27,6 +27,7 @@ export const FUNCTION_LABELS: Record<BookFunction, string> = {
   educational: "Educational Guide",
   historical: "Historical Analysis",
   commentary: "Commentary",
+  polemic: "Polemic",
 };
 
 export const FUNCTION_DESCRIPTIONS: Record<BookFunction, string> = {
@@ -36,6 +37,7 @@ export const FUNCTION_DESCRIPTIONS: Record<BookFunction, string> = {
   educational: "Teaching and learning resource",
   historical: "Analyzes historical events or periods",
   commentary: "Interprets or critiques other works",
+  polemic: "Argumentative writing against opposing views",
 };
 
 // Difficulty Labels

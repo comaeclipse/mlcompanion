@@ -26,6 +26,7 @@ enum BookFunction {
   educational
   historical
   commentary
+  polemic
 }
 
 enum BookDifficulty {
