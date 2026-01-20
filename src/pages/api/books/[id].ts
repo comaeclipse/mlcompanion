@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { prisma } from "../../../lib/prisma";
 import { requireAuth } from "../../../lib/auth-utils";
 import { cleanPurchaseLinks } from "../../../lib/book-utils";
+import { isValidSourceType, isValidFunction, isValidDifficulty, isValidTradition } from "../../../lib/book-facets";
 
 export const GET: APIRoute = async ({ params }) => {
   const book = await prisma.book.findUnique({
@@ -66,6 +67,41 @@ export const PUT: APIRoute = async (context) => {
 
   const normalizedExternalReviews = Array.isArray(body.externalReviews) ? body.externalReviews : null;
 
+  // Validate facet fields
+  if (body.sourceType && !isValidSourceType(body.sourceType)) {
+    return new Response(JSON.stringify({ error: `Invalid sourceType: ${body.sourceType}` }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (body.functions && Array.isArray(body.functions)) {
+    const invalidFunctions = body.functions.filter((f: string) => !isValidFunction(f));
+    if (invalidFunctions.length > 0) {
+      return new Response(JSON.stringify({ error: `Invalid function values: ${invalidFunctions.join(", ")}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  if (body.difficulty && !isValidDifficulty(body.difficulty)) {
+    return new Response(JSON.stringify({ error: `Invalid difficulty: ${body.difficulty}` }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (body.traditions && Array.isArray(body.traditions)) {
+    const invalidTraditions = body.traditions.filter((t: string) => !isValidTradition(t));
+    if (invalidTraditions.length > 0) {
+      return new Response(JSON.stringify({ error: `Invalid tradition values: ${invalidTraditions.join(", ")}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
   const book = await prisma.book.update({
     where: { id: params.id },
     data: {
@@ -88,6 +124,10 @@ export const PUT: APIRoute = async (context) => {
       goodreadsRating: parsedGoodreadsRating,
       goodreadsReviews: parsedGoodreadsReviews !== null ? Math.floor(parsedGoodreadsReviews) : null,
       externalReviews: normalizedExternalReviews,
+      sourceType: body.sourceType !== undefined ? body.sourceType : existing.sourceType,
+      functions: body.functions !== undefined ? body.functions : existing.functions,
+      difficulty: body.difficulty !== undefined ? body.difficulty : existing.difficulty,
+      traditions: body.traditions !== undefined ? body.traditions : existing.traditions,
       isPublished: body.isPublished,
     },
   });

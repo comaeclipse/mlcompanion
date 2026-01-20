@@ -2,10 +2,66 @@ import type { APIRoute } from "astro";
 import { prisma } from "../../../lib/prisma";
 import { requireAuth } from "../../../lib/auth-utils";
 import { parseISBN, validateISBN, validateReadFreeLinks, validatePurchaseLinks, cleanPurchaseLinks } from "../../../lib/book-utils";
+import { isValidSourceType, isValidFunction, isValidDifficulty, isValidTradition } from "../../../lib/book-facets";
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ url }) => {
+  // Parse query parameters for facet filtering
+  const sourceType = url.searchParams.get("sourceType");
+  const functionsParam = url.searchParams.getAll("function");
+  const difficulty = url.searchParams.get("difficulty");
+  const traditionsParam = url.searchParams.getAll("tradition");
+
+  // Build where clause
+  const where: any = { isPublished: true };
+
+  // Validate and apply sourceType filter
+  if (sourceType) {
+    if (!isValidSourceType(sourceType)) {
+      return new Response(JSON.stringify({ error: `Invalid sourceType: ${sourceType}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    where.sourceType = sourceType;
+  }
+
+  // Validate and apply functions filter (array - OR logic within functions)
+  if (functionsParam.length > 0) {
+    const invalidFunctions = functionsParam.filter(f => !isValidFunction(f));
+    if (invalidFunctions.length > 0) {
+      return new Response(JSON.stringify({ error: `Invalid function values: ${invalidFunctions.join(", ")}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    where.functions = { hasSome: functionsParam };
+  }
+
+  // Validate and apply difficulty filter
+  if (difficulty) {
+    if (!isValidDifficulty(difficulty)) {
+      return new Response(JSON.stringify({ error: `Invalid difficulty: ${difficulty}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    where.difficulty = difficulty;
+  }
+
+  // Validate and apply traditions filter (array - OR logic within traditions)
+  if (traditionsParam.length > 0) {
+    const invalidTraditions = traditionsParam.filter(t => !isValidTradition(t));
+    if (invalidTraditions.length > 0) {
+      return new Response(JSON.stringify({ error: `Invalid tradition values: ${invalidTraditions.join(", ")}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    where.traditions = { hasSome: traditionsParam };
+  }
+
   const books = await prisma.book.findMany({
-    where: { isPublished: true },
+    where,
     orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     include: { creator: { select: { name: true } } },
   });
@@ -41,6 +97,10 @@ export const POST: APIRoute = async (context) => {
     goodreadsRating,
     goodreadsReviews,
     externalReviews,
+    sourceType,
+    functions,
+    difficulty,
+    traditions,
   } = body;
 
   if (!title) {
@@ -48,6 +108,41 @@ export const POST: APIRoute = async (context) => {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Validate facet fields
+  if (sourceType && !isValidSourceType(sourceType)) {
+    return new Response(JSON.stringify({ error: `Invalid sourceType: ${sourceType}` }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (functions && Array.isArray(functions)) {
+    const invalidFunctions = functions.filter((f: string) => !isValidFunction(f));
+    if (invalidFunctions.length > 0) {
+      return new Response(JSON.stringify({ error: `Invalid function values: ${invalidFunctions.join(", ")}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  if (difficulty && !isValidDifficulty(difficulty)) {
+    return new Response(JSON.stringify({ error: `Invalid difficulty: ${difficulty}` }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (traditions && Array.isArray(traditions)) {
+    const invalidTraditions = traditions.filter((t: string) => !isValidTradition(t));
+    if (invalidTraditions.length > 0) {
+      return new Response(JSON.stringify({ error: `Invalid tradition values: ${invalidTraditions.join(", ")}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
   }
 
   // Validate ISBN if provided
@@ -144,6 +239,10 @@ export const POST: APIRoute = async (context) => {
       goodreadsRating: parsedGoodreadsRating,
       goodreadsReviews: parsedGoodreadsReviews !== null ? Math.floor(parsedGoodreadsReviews) : null,
       externalReviews: normalizedExternalReviews,
+      sourceType: sourceType || null,
+      functions: functions || [],
+      difficulty: difficulty || null,
+      traditions: traditions || [],
       createdBy: authResult.user.id,
     },
   });

@@ -13,6 +13,37 @@ datasource db {
   provider = "postgresql"
 }
 
+// Book classification enums for faceted taxonomy
+enum BookSourceType {
+  primary
+  secondary
+}
+
+enum BookFunction {
+  foundational
+  theory
+  introductory
+  educational
+  historical
+  commentary
+}
+
+enum BookDifficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum BookTradition {
+  classical_marxism
+  leninism
+  trotskyism
+  maoism
+  western_marxism
+  marxism_leninism
+  other
+}
+
 model User {
   id            String    @id @default(uuid())
   createdAt     DateTime  @default(now())
@@ -157,6 +188,12 @@ model Book {
   goodreadsReviews Int?
   externalReviews Json?
 
+  // Faceted classification fields
+  sourceType      BookSourceType?
+  functions       BookFunction[]   @default([])
+  difficulty      BookDifficulty?
+  traditions      BookTradition[]  @default([])
+
   tags            String[]
   order           Int      @default(0)
   isPublished     Boolean  @default(true)
@@ -170,6 +207,8 @@ model Book {
   @@index([isPublished])
   @@index([isbn])
   @@index([isbn13])
+  @@index([sourceType])
+  @@index([difficulty])
 }
 
 model Author {
