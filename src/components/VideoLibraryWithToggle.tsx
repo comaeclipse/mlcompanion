@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { LayoutList, Grid2x2 } from "lucide-react";
 import { VideoCard } from "./VideoCard";
-import { VideoPlayerModal } from "./VideoPlayerModal";
+import { extractYouTubeVideoId } from "../lib/video-utils";
 
 interface Video {
   id: string;
@@ -20,8 +20,12 @@ interface VideoLibraryWithToggleProps {
 }
 
 export function VideoLibraryWithToggle({ videos }: VideoLibraryWithToggleProps) {
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  function getVideoHref(video: Video): string {
+    const ytId = extractYouTubeVideoId(video.url);
+    return ytId ? `/video/${ytId}` : video.url;
+  }
 
   // Load view preference from localStorage
   useEffect(() => {
@@ -81,11 +85,9 @@ export function VideoLibraryWithToggle({ videos }: VideoLibraryWithToggleProps) 
       {viewMode === "list" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {videos.map((video) => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              onClick={() => setSelectedVideo(video)}
-            />
+            <a key={video.id} href={getVideoHref(video)} style={{ textDecoration: "none", color: "inherit" }}>
+              <VideoCard video={video} />
+            </a>
           ))}
         </div>
       ) : (
@@ -97,16 +99,18 @@ export function VideoLibraryWithToggle({ videos }: VideoLibraryWithToggleProps) 
           }}
         >
           {videos.map((video) => (
-            <div
+            <a
               key={video.id}
-              onClick={() => setSelectedVideo(video)}
+              href={getVideoHref(video)}
               style={{
-                cursor: "pointer",
+                textDecoration: "none",
+                color: "inherit",
                 borderRadius: "12px",
                 overflow: "hidden",
                 background: "var(--paper-color)",
                 border: "1px solid var(--border-color)",
                 transition: "transform 0.15s, box-shadow 0.15s",
+                display: "block",
               }}
               className="video-card-hover"
             >
@@ -219,16 +223,10 @@ export function VideoLibraryWithToggle({ videos }: VideoLibraryWithToggleProps) 
                   </div>
                 )}
               </div>
-            </div>
+            </a>
           ))}
         </div>
       )}
-
-      <VideoPlayerModal
-        video={selectedVideo}
-        isOpen={selectedVideo !== null}
-        onClose={() => setSelectedVideo(null)}
-      />
     </>
   );
 }

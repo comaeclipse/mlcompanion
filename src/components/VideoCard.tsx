@@ -11,17 +11,9 @@ interface Video {
 
 interface VideoCardProps {
   video: Video;
-  onClick?: () => void;
 }
 
-export function VideoCard({ video, onClick }: VideoCardProps) {
-  const handleClick = (e: React.MouseEvent) => {
-    if (onClick) {
-      e.preventDefault();
-      onClick();
-    }
-  };
-
+export function VideoCard({ video }: VideoCardProps) {
   // Truncate description to 119 chars including "..."
   const shortDesc = video.description.length > 119
     ? video.description.slice(0, 116) + "..."
@@ -29,7 +21,6 @@ export function VideoCard({ video, onClick }: VideoCardProps) {
 
   return (
     <div
-      onClick={handleClick}
       style={{
         display: "flex",
         gap: "1rem",
@@ -37,7 +28,6 @@ export function VideoCard({ video, onClick }: VideoCardProps) {
         borderRadius: "12px",
         background: "var(--paper-color)",
         border: "1px solid var(--border-color)",
-        cursor: "pointer",
         transition: "transform 0.15s, box-shadow 0.15s",
       }}
       className="video-card-hover"
