@@ -5,7 +5,16 @@ import { requireAuth } from "../../../lib/auth-utils";
 export const GET: APIRoute = async ({ params }) => {
   const video = await prisma.video.findUnique({
     where: { id: params.id },
-    include: { creator: { select: { name: true } } },
+    include: {
+      creator: { select: { name: true } },
+      linkedBooks: {
+        include: {
+          book: {
+            select: { id: true, title: true, authors: true, thumbnailUrl: true, isbn13: true },
+          },
+        },
+      },
+    },
   });
 
   if (!video) {
@@ -59,6 +68,19 @@ export const PUT: APIRoute = async (context) => {
       isPublished: body.isPublished,
     },
   });
+
+  // Update linked books if bookIds provided
+  if (Array.isArray(body.bookIds)) {
+    await prisma.videoBook.deleteMany({ where: { videoId: video.id } });
+    if (body.bookIds.length > 0) {
+      await prisma.videoBook.createMany({
+        data: body.bookIds.map((bookId: string) => ({
+          videoId: video.id,
+          bookId,
+        })),
+      });
+    }
+  }
 
   return new Response(JSON.stringify(video), {
     status: 200,

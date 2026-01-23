@@ -73,6 +73,16 @@ export const POST: APIRoute = async (context) => {
     },
   });
 
+  // Link books if bookIds provided
+  if (Array.isArray(body.bookIds) && body.bookIds.length > 0) {
+    await prisma.videoBook.createMany({
+      data: body.bookIds.map((bookId: string) => ({
+        videoId: video.id,
+        bookId,
+      })),
+    });
+  }
+
   return new Response(JSON.stringify(video), {
     status: 201,
     headers: { "Content-Type": "application/json" },

@@ -28,6 +28,13 @@ interface Channel {
   channelId: string;
 }
 
+interface LinkedBook {
+  id: string;
+  title: string;
+  authors: string[];
+  thumbnailUrl?: string | null;
+}
+
 export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
   const [formData, setFormData] = useState<Video>({
     title: "",
@@ -42,6 +49,10 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
   });
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannelId, setSelectedChannelId] = useState<string>("");
+  const [linkedBooks, setLinkedBooks] = useState<LinkedBook[]>([]);
+  const [bookSearch, setBookSearch] = useState("");
+  const [bookResults, setBookResults] = useState<LinkedBook[]>([]);
+  const [bookSearching, setBookSearching] = useState(false);
   const [loading, setLoading] = useState(false);
   const [metaLoading, setMetaLoading] = useState(false);
   const [error, setError] = useState("");
@@ -67,7 +78,7 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
     if (video) {
       setFormData({
         ...video,
-        publishedAt: video.publishedAt 
+        publishedAt: video.publishedAt
           ? (typeof video.publishedAt === 'string' ? video.publishedAt : video.publishedAt.toISOString())
           : "",
       });
@@ -83,8 +94,56 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
         tags: [],
         category: "",
       });
+      setLinkedBooks([]);
     }
   }, [video]);
+
+  // Fetch linked books when editing an existing video
+  useEffect(() => {
+    if (video?.id) {
+      const fetchLinkedBooks = async () => {
+        try {
+          const response = await fetch(`/api/videos/${video.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.linkedBooks) {
+              setLinkedBooks(
+                data.linkedBooks.map((lb: any) => lb.book)
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch linked books:", err);
+        }
+      };
+      void fetchLinkedBooks();
+    }
+  }, [video?.id]);
+
+  // Debounced book search
+  useEffect(() => {
+    if (bookSearch.length < 2) {
+      setBookResults([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setBookSearching(true);
+      try {
+        const response = await fetch(`/api/books/search?q=${encodeURIComponent(bookSearch)}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Filter out already-linked books
+          const linkedIds = linkedBooks.map((b) => b.id);
+          setBookResults(data.filter((b: LinkedBook) => linkedIds.indexOf(b.id) === -1));
+        }
+      } catch (err) {
+        console.error("Book search error:", err);
+      } finally {
+        setBookSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [bookSearch, linkedBooks]);
 
   const fetchMetadata = async () => {
     const url = formData.url.trim();
@@ -134,10 +193,11 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
     const url = video?.id ? `/api/videos/${video.id}` : "/api/videos";
     const method = video?.id ? "PUT" : "POST";
 
-    // Prepare data with channelId
+    // Prepare data with channelId and bookIds
     const submitData = {
       ...formData,
       channelId: selectedChannelId || null,
+      bookIds: linkedBooks.map((b) => b.id),
     };
 
     try {
@@ -285,6 +345,115 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
         />
         <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.25rem" }}>
           Separate tags with commas. Tags can contain spaces.
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Companion Books</label>
+        <div style={{ position: "relative" }}>
+          <Input
+            value={bookSearch}
+            onChange={(e) => setBookSearch(e.target.value)}
+            placeholder="Search books by title..."
+          />
+          {bookSearching && (
+            <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "0.75rem", color: "var(--muted-color)" }}>
+              Searching...
+            </span>
+          )}
+          {bookResults.length > 0 && (
+            <div style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              background: "var(--paper-color)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "8px",
+              marginTop: "4px",
+              maxHeight: "200px",
+              overflowY: "auto",
+              zIndex: 10,
+              boxShadow: "0 4px 12px rgba(67, 44, 23, 0.12)",
+            }}>
+              {bookResults.map((book) => (
+                <button
+                  key={book.id}
+                  type="button"
+                  onClick={() => {
+                    setLinkedBooks([...linkedBooks, book]);
+                    setBookSearch("");
+                    setBookResults([]);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    width: "100%",
+                    padding: "0.5rem 0.75rem",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontSize: "0.85rem",
+                    borderBottom: "1px solid var(--border-color)",
+                  }}
+                >
+                  {book.thumbnailUrl && (
+                    <img src={book.thumbnailUrl} alt="" style={{ width: "24px", height: "36px", objectFit: "cover", borderRadius: "2px" }} />
+                  )}
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{book.title}</div>
+                    {book.authors.length > 0 && (
+                      <div style={{ fontSize: "0.75rem", color: "var(--muted-color)" }}>
+                        {book.authors.join(", ")}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {linkedBooks.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.5rem" }}>
+            {linkedBooks.map((book) => (
+              <span
+                key={book.id}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  padding: "4px 10px",
+                  background: "var(--wash-color)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "999px",
+                  fontSize: "0.8rem",
+                }}
+              >
+                {book.title}
+                <button
+                  type="button"
+                  onClick={() => setLinkedBooks(linkedBooks.filter((b) => b.id !== book.id))}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "1rem",
+                    lineHeight: 1,
+                    color: "var(--muted-color)",
+                    padding: 0,
+                  }}
+                  title="Remove"
+                >
+                  x
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.25rem" }}>
+          Link books that this video references or discusses
         </p>
       </div>
 

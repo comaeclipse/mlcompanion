@@ -130,6 +130,8 @@ model Video {
   channelId   String?
   channel     Channel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
 
+  linkedBooks VideoBook[]
+
   @@index([createdBy])
   @@index([isPublished])
   @@index([channelId])
@@ -203,6 +205,7 @@ model Book {
   creator         User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   authorRelations BookAuthor[]
+  linkedVideos    VideoBook[]
 
   @@index([createdBy])
   @@index([isPublished])
@@ -245,4 +248,19 @@ model BookAuthor {
   @@index([bookId])
   @@index([authorId])
   @@index([order])
+}
+
+model VideoBook {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  videoId   String
+  bookId    String
+
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, bookId])
+  @@index([videoId])
+  @@index([bookId])
 }

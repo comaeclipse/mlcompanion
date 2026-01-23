@@ -20,6 +20,13 @@ const video = await prisma.video.findFirst({
   },
   include: {
     channel: true,
+    linkedBooks: {
+      include: {
+        book: {
+          select: { id: true, title: true, authors: true, thumbnailUrl: true },
+        },
+      },
+    },
   },
 });
 
@@ -136,6 +143,32 @@ function slugifyChannel(name: string): string {
                     {tag}
                   </a>
                 ))}
+              </div>
+            )}
+
+            {video.linkedBooks && video.linkedBooks.length > 0 && (
+              <div class="companion-reading">
+                <h3 class="companion-heading">Companion Reading</h3>
+                <p class="companion-subtitle">This video draws from concepts in:</p>
+                <div class="companion-books">
+                  {video.linkedBooks.map((lb: any) => (
+                    <div class="companion-book-card">
+                      {lb.book.thumbnailUrl ? (
+                        <img src={lb.book.thumbnailUrl} alt={lb.book.title} class="companion-book-cover" />
+                      ) : (
+                        <div class="companion-book-cover-placeholder" />
+                      )}
+                      <div class="companion-book-info">
+                        <span class="companion-book-title">{lb.book.title}</span>
+                        {lb.book.authors && lb.book.authors.length > 0 && (
+                          <span class="companion-book-authors">
+                            {lb.book.authors.join(", ")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -290,6 +323,85 @@ function slugifyChannel(name: string): string {
 
   .video-tags .pill:hover {
     opacity: 0.7;
+  }
+
+  .companion-reading {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: var(--wash-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+  }
+
+  .companion-heading {
+    font-family: "Crimson Pro", "Times New Roman", serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+  }
+
+  .companion-subtitle {
+    font-size: 0.82rem;
+    color: var(--muted-color);
+    margin: 0 0 1rem;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .companion-books {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .companion-book-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: var(--paper-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .companion-book-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(67, 44, 23, 0.1);
+  }
+
+  .companion-book-cover {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .companion-book-cover-placeholder {
+    width: 40px;
+    height: 60px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--accent-color), #d4835f);
+    flex-shrink: 0;
+  }
+
+  .companion-book-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .companion-book-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .companion-book-authors {
+    font-size: 0.78rem;
+    color: var(--muted-color);
+    font-family: "Work Sans", "Segoe UI", sans-serif;
   }
 
   .video-external-links {
