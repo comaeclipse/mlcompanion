@@ -1,0 +1,352 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { VideoDescription } from "../../components/VideoDescription";
+import { RelatedVideos } from "../../components/RelatedVideos";
+import { prisma } from "../../lib/prisma";
+
+const { id } = Astro.params;
+
+// Validate YouTube video ID format (typically 11 chars, alphanumeric + dash/underscore)
+if (!id || !/^[\w-]{10,12}$/.test(id)) {
+  return Astro.redirect("/videos");
+}
+
+// Find video in database by matching URL substring
+const video = await prisma.video.findFirst({
+  where: {
+    isPublished: true,
+    url: { contains: id },
+  },
+  include: {
+    channel: true,
+  },
+});
+
+// Build embed URL
+const embedUrl = `https://www.youtube.com/embed/${id}?rel=0`;
+
+// Fetch related videos (same channel or overlapping tags)
+let relatedVideos: any[] = [];
+if (video) {
+  const conditions: any[] = [];
+
+  if (video.channelId) {
+    conditions.push({ channelId: video.channelId });
+  }
+
+  if (video.tags.length > 0) {
+    conditions.push({ tags: { hasSome: video.tags } });
+  }
+
+  if (conditions.length > 0) {
+    relatedVideos = await prisma.video.findMany({
+      where: {
+        isPublished: true,
+        id: { not: video.id },
+        OR: conditions,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    });
+  }
+}
+
+const pageTitle = video ? `${video.title} - MLCompanion` : "Video - MLCompanion";
+
+function slugifyChannel(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+---
+
+<Layout title={pageTitle}>
+  <div class="page video-watch-page">
+    <Breadcrumb
+      items={[
+        { label: "Home", href: "/" },
+        { label: "Videos", href: "/videos" },
+        { label: video?.title || "Video" },
+      ]}
+    />
+
+    <div class="video-watch-layout">
+      <!-- Main Column -->
+      <div class="video-main">
+        <!-- Player -->
+        <div class="video-player-wrapper">
+          <iframe
+            src={embedUrl}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            class="video-player-iframe"
+            title={video?.title || "YouTube Video"}
+          ></iframe>
+        </div>
+
+        {video ? (
+          <>
+            <h1 class="video-title">{video.title}</h1>
+
+            <div class="video-channel-row">
+              {video.channel ? (
+                <a href={`/videos/channel/${video.channel.slug}`} class="channel-link">
+                  {video.channel.thumbnailUrl ? (
+                    <img src={video.channel.thumbnailUrl} alt={video.channel.name} class="channel-avatar" />
+                  ) : (
+                    <div class="channel-avatar-placeholder">
+                      {video.channel.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span class="channel-name">{video.channel.name}</span>
+                </a>
+              ) : video.channelName ? (
+                <a href={`/videos/channel/${slugifyChannel(video.channelName)}`} class="channel-link">
+                  <div class="channel-avatar-placeholder">
+                    {video.channelName.charAt(0).toUpperCase()}
+                  </div>
+                  <span class="channel-name">{video.channelName}</span>
+                </a>
+              ) : null}
+
+              <div class="video-meta-badges">
+                {video.duration && <span class="meta-badge">{video.duration}</span>}
+                {video.publishedAt && (
+                  <span class="meta-badge">
+                    {new Date(video.publishedAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {video.description && (
+              <VideoDescription client:load description={video.description} />
+            )}
+
+            {video.tags.length > 0 && (
+              <div class="video-tags">
+                {video.tags.map((tag: string) => (
+                  <a
+                    href={`/videos/tag/${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                    class="pill"
+                  >
+                    {tag}
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <div class="video-external-links">
+              <a href={video.url} target="_blank" rel="noopener noreferrer" class="button">
+                Watch on YouTube
+              </a>
+            </div>
+          </>
+        ) : (
+          <div class="video-fallback-info">
+            <h1 class="video-title">YouTube Video</h1>
+            <p class="muted">This video is not yet in our library.</p>
+            <a
+              href={`https://www.youtube.com/watch?v=${id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="button"
+            >
+              Watch on YouTube
+            </a>
+          </div>
+        )}
+      </div>
+
+      <!-- Sidebar -->
+      {relatedVideos.length > 0 && (
+        <aside class="video-sidebar">
+          <h2 class="sidebar-heading">Related Videos</h2>
+          <RelatedVideos client:load videos={relatedVideos} />
+        </aside>
+      )}
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .video-watch-page {
+    max-width: 1200px;
+  }
+
+  .video-watch-layout {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    margin-top: 1rem;
+  }
+
+  .video-player-wrapper {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #000;
+    box-shadow: 0 8px 24px rgba(67, 44, 23, 0.15);
+  }
+
+  .video-player-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .video-title {
+    font-family: "Crimson Pro", "Times New Roman", serif;
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 600;
+    margin: 1.25rem 0 0.75rem;
+    line-height: 1.3;
+  }
+
+  .video-channel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .channel-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--ink-color);
+    transition: color 0.2s;
+  }
+
+  .channel-link:hover {
+    color: var(--accent-color);
+  }
+
+  .channel-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+  }
+
+  .channel-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-color), #d4835f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .channel-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .video-meta-badges {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-badge {
+    font-size: 0.8rem;
+    color: var(--muted-color);
+    background: var(--wash-color);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .video-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .video-tags .pill {
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+
+  .video-tags .pill:hover {
+    opacity: 0.7;
+  }
+
+  .video-external-links {
+    margin-top: 1.5rem;
+  }
+
+  .video-external-links .button {
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .video-fallback-info {
+    padding: 1.5rem 0;
+  }
+
+  .video-sidebar {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .sidebar-heading {
+    font-family: "Crimson Pro", "Times New Roman", serif;
+    font-size: 1.1rem;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  @media (max-width: 900px) {
+    .video-watch-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .video-sidebar {
+      position: static;
+      max-height: none;
+    }
+
+    .video-player-wrapper {
+      border-radius: 12px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .video-player-wrapper {
+      border-radius: 0;
+      margin: 0 -24px;
+      width: calc(100% + 48px);
+    }
+  }
+</style>
+
+<style is:global>
+  .related-video-card:hover {
+    background: var(--wash-color);
+  }
+</style>
