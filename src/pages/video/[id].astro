@@ -226,14 +226,14 @@ const truncatedDescription = isLongDescription
     if (!truncated || !full || !btn) return;
 
     btn.addEventListener("click", () => {
-      const expanded = full.style.display !== "none";
+      const expanded = full.style.display === "block";
       if (expanded) {
         truncated.style.display = "";
         full.style.display = "none";
         btn.textContent = "Show more";
       } else {
         truncated.style.display = "none";
-        full.style.display = "";
+        full.style.display = "block";
         btn.textContent = "Show less";
       }
     });
