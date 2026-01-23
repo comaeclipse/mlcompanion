@@ -135,6 +135,7 @@ model Video {
   @@index([createdBy])
   @@index([isPublished])
   @@index([channelId])
+  @@index([tags], type: Gin)
 }
 
 model Channel {

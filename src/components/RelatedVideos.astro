@@ -1,0 +1,129 @@
+---
+import { extractYouTubeVideoId } from "../lib/video-utils";
+
+interface Props {
+  videos: {
+    id: string;
+    title: string;
+    url: string;
+    thumbnailUrl?: string | null;
+    duration?: string | null;
+    channelName?: string | null;
+  }[];
+}
+
+const { videos } = Astro.props;
+---
+
+<div class="related-videos-list">
+  {videos.map((video) => {
+    const ytId = extractYouTubeVideoId(video.url);
+    const watchUrl = ytId ? `/video/${ytId}` : video.url;
+
+    return (
+      <a href={watchUrl} class="related-video-card">
+        <div class="related-thumb-wrapper">
+          {video.thumbnailUrl ? (
+            <img
+              src={video.thumbnailUrl}
+              alt={video.title}
+              class="related-thumb"
+              loading="lazy"
+            />
+          ) : (
+            <div class="related-thumb-placeholder" />
+          )}
+          {video.duration && (
+            <span class="related-duration">{video.duration}</span>
+          )}
+        </div>
+
+        <div class="related-info">
+          <h4 class="related-title">{video.title}</h4>
+          {video.channelName && (
+            <p class="related-channel">{video.channelName}</p>
+          )}
+        </div>
+      </a>
+    );
+  })}
+</div>
+
+<style>
+  .related-videos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .related-video-card {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s;
+  }
+
+  .related-video-card:hover {
+    background: var(--wash-color);
+  }
+
+  .related-thumb-wrapper {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .related-thumb {
+    width: 140px;
+    height: 79px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #222;
+  }
+
+  .related-thumb-placeholder {
+    width: 140px;
+    height: 79px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent-color), #d4835f);
+  }
+
+  .related-duration {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: "Work Sans", sans-serif;
+  }
+
+  .related-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .related-title {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .related-channel {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    color: var(--muted-color);
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+</style>

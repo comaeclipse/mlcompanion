@@ -1,9 +1,9 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import Breadcrumb from "../../components/Breadcrumb.astro";
-import { VideoDescription } from "../../components/VideoDescription";
-import { RelatedVideos } from "../../components/RelatedVideos";
+import RelatedVideos from "../../components/RelatedVideos.astro";
 import { prisma } from "../../lib/prisma";
+import type { Prisma, Video } from "../../generated/prisma/client";
 
 const { id } = Astro.params;
 
@@ -34,9 +34,9 @@ const video = await prisma.video.findFirst({
 const embedUrl = `https://www.youtube.com/embed/${id}?rel=0`;
 
 // Fetch related videos (same channel or overlapping tags)
-let relatedVideos: any[] = [];
+let relatedVideos: Video[] = [];
 if (video) {
-  const conditions: any[] = [];
+  const conditions: Prisma.VideoWhereInput[] = [];
 
   if (video.channelId) {
     conditions.push({ channelId: video.channelId });
@@ -64,6 +64,11 @@ const pageTitle = video ? `${video.title} - MLCompanion` : "Video - MLCompanion"
 function slugifyChannel(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
+
+const isLongDescription = video?.description && video.description.length > 300;
+const truncatedDescription = isLongDescription
+  ? video.description.slice(0, 297) + "..."
+  : video?.description;
 ---
 
 <Layout title={pageTitle}>
@@ -130,7 +135,15 @@ function slugifyChannel(name: string): string {
             </div>
 
             {video.description && (
-              <VideoDescription client:load description={video.description} />
+              <div class="video-description" data-long={isLongDescription ? "true" : undefined}>
+                <p class="video-description-text">{truncatedDescription}</p>
+                {isLongDescription && (
+                  <p class="video-description-full">{video.description}</p>
+                )}
+                {isLongDescription && (
+                  <button class="video-description-toggle" type="button">Show more</button>
+                )}
+              </div>
             )}
 
             {video.tags.length > 0 && (
@@ -151,7 +164,7 @@ function slugifyChannel(name: string): string {
                 <h3 class="companion-heading">Companion Reading</h3>
                 <p class="companion-subtitle">This video draws from concepts in:</p>
                 <div class="companion-books">
-                  {video.linkedBooks.map((lb: any) => (
+                  {video.linkedBooks.map((lb) => (
                     <div class="companion-book-card">
                       {lb.book.thumbnailUrl ? (
                         <img src={lb.book.thumbnailUrl} alt={lb.book.title} class="companion-book-cover" />
@@ -198,12 +211,34 @@ function slugifyChannel(name: string): string {
       {relatedVideos.length > 0 && (
         <aside class="video-sidebar">
           <h2 class="sidebar-heading">Related Videos</h2>
-          <RelatedVideos client:load videos={relatedVideos} />
+          <RelatedVideos videos={relatedVideos} />
         </aside>
       )}
     </div>
   </div>
 </Layout>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".video-description[data-long]").forEach((el) => {
+    const truncated = el.querySelector<HTMLElement>(".video-description-text");
+    const full = el.querySelector<HTMLElement>(".video-description-full");
+    const btn = el.querySelector<HTMLButtonElement>(".video-description-toggle");
+    if (!truncated || !full || !btn) return;
+
+    btn.addEventListener("click", () => {
+      const expanded = full.style.display !== "none";
+      if (expanded) {
+        truncated.style.display = "";
+        full.style.display = "none";
+        btn.textContent = "Show more";
+      } else {
+        truncated.style.display = "none";
+        full.style.display = "";
+        btn.textContent = "Show less";
+      }
+    });
+  });
+</script>
 
 <style>
   .video-watch-page {
@@ -306,6 +341,40 @@ function slugifyChannel(name: string): string {
     background: var(--wash-color);
     padding: 4px 10px;
     border-radius: 999px;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .video-description {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--wash-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .video-description-text,
+  .video-description-full {
+    margin: 0;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    color: var(--muted-color);
+    font-size: 0.9rem;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .video-description-full {
+    display: none;
+  }
+
+  .video-description-toggle {
+    margin-top: 0.75rem;
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0;
     font-family: "Work Sans", "Segoe UI", sans-serif;
   }
 
@@ -454,11 +523,5 @@ function slugifyChannel(name: string): string {
       margin: 0 -24px;
       width: calc(100% + 48px);
     }
-  }
-</style>
-
-<style is:global>
-  .related-video-card:hover {
-    background: var(--wash-color);
   }
 </style>
