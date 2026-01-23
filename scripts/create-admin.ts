@@ -17,6 +17,17 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function createAdmin() {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.error("❌ Required environment variables not set:");
+    if (!email) console.error("   ADMIN_EMAIL is missing");
+    if (!password) console.error("   ADMIN_PASSWORD is missing");
+    console.error("\nUsage: ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=yourpass npm run create-admin");
+    process.exit(1);
+  }
+
   try {
     console.log("Creating admin account...");
     console.log("Database URL:", process.env.DATABASE_URL ? "✓ Loaded" : "✗ Not found");
@@ -24,7 +35,7 @@ async function createAdmin() {
     // Try to delete existing user if it exists
     try {
       await prisma.user.delete({
-        where: { email: "***REDACTED***" },
+        where: { email },
       });
       console.log("Deleted existing user.");
     } catch (e) {
@@ -35,18 +46,15 @@ async function createAdmin() {
     // Create the user
     const user = await prisma.user.create({
       data: {
-        email: "***REDACTED***",
-        name: "mladmin",
+        email,
+        name: email.split("@")[0],
         emailVerified: true,
       },
     });
 
-    console.log("✅ User created:", user.id);
+    console.log("User created:", user.id);
 
-    // Create the account with password
-    // Note: Better Auth uses bcrypt for password hashing
-    // We need to install bcryptjs to hash properly
-    const hashedPassword = await hashPassword("***REDACTED***");
+    const hashedPassword = await hashPassword(password);
 
     await prisma.account.create({
       data: {
@@ -57,14 +65,9 @@ async function createAdmin() {
       },
     });
 
-    console.log("\n✅ Admin account created successfully!");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📧 Email: ***REDACTED***");
-    console.log("👤 Username: mladmin");
-    console.log("🔑 Password: ***REDACTED***");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("\n✨ Password is properly hashed with bcrypt (compatible with Better Auth).");
-    console.log("You can now log in at your login page!");
+    console.log("\nAdmin account created successfully!");
+    console.log("Email:", email);
+    console.log("You can now log in at your login page.");
   } catch (error: any) {
     console.error("❌ Error creating admin account:");
     console.error(error.message);
