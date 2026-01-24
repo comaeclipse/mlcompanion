@@ -65,21 +65,19 @@ function slugifyChannel(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 }
 
-const isLongDescription = video?.description && video.description.length > 300;
-const truncatedDescription = isLongDescription
-  ? video.description.slice(0, 297) + "..."
-  : video?.description;
 ---
 
 <Layout title={pageTitle}>
   <div class="page video-watch-page">
-    <Breadcrumb
-      items={[
-        { label: "Home", href: "/" },
-        { label: "Videos", href: "/videos" },
-        { label: video?.title || "Video" },
-      ]}
-    />
+    <div class="video-breadcrumb">
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Videos", href: "/videos" },
+          { label: video?.title || "Video" },
+        ]}
+      />
+    </div>
 
     <div class="video-watch-layout">
       <!-- Main Column -->
@@ -156,14 +154,9 @@ const truncatedDescription = isLongDescription
             )}
 
             {video.description && (
-              <div class="video-description" data-long={isLongDescription ? "true" : undefined}>
-                <p class="video-description-text">{truncatedDescription}</p>
-                {isLongDescription && (
-                  <p class="video-description-full">{video.description}</p>
-                )}
-                {isLongDescription && (
-                  <button class="video-description-toggle" type="button">Show more</button>
-                )}
+              <div class="video-description">
+                <button class="video-description-toggle" type="button">Show description</button>
+                <p class="video-description-text">{video.description}</p>
               </div>
             )}
 
@@ -240,23 +233,15 @@ const truncatedDescription = isLongDescription
 </Layout>
 
 <script>
-  document.querySelectorAll<HTMLElement>(".video-description[data-long]").forEach((el) => {
-    const truncated = el.querySelector<HTMLElement>(".video-description-text");
-    const full = el.querySelector<HTMLElement>(".video-description-full");
+  document.querySelectorAll<HTMLElement>(".video-description").forEach((el) => {
+    const text = el.querySelector<HTMLElement>(".video-description-text");
     const btn = el.querySelector<HTMLButtonElement>(".video-description-toggle");
-    if (!truncated || !full || !btn) return;
+    if (!text || !btn) return;
 
     btn.addEventListener("click", () => {
-      const expanded = full.style.display === "block";
-      if (expanded) {
-        truncated.style.display = "";
-        full.style.display = "none";
-        btn.textContent = "Show more";
-      } else {
-        truncated.style.display = "none";
-        full.style.display = "block";
-        btn.textContent = "Show less";
-      }
+      const visible = text.style.display === "block";
+      text.style.display = visible ? "none" : "block";
+      btn.textContent = visible ? "Show description" : "Hide description";
     });
   });
 </script>
@@ -412,15 +397,15 @@ const truncatedDescription = isLongDescription
 
   .video-description {
     margin-top: 1rem;
+  }
+
+  .video-description-text {
+    display: none;
+    margin: 0.75rem 0 0;
     padding: 1rem;
     background: var(--wash-color);
     border-radius: 12px;
     border: 1px solid var(--border-color);
-  }
-
-  .video-description-text,
-  .video-description-full {
-    margin: 0;
     white-space: pre-wrap;
     line-height: 1.6;
     color: var(--muted-color);
@@ -428,12 +413,7 @@ const truncatedDescription = isLongDescription
     font-family: "Work Sans", "Segoe UI", sans-serif;
   }
 
-  .video-description-full {
-    display: none;
-  }
-
   .video-description-toggle {
-    margin-top: 0.75rem;
     background: none;
     border: none;
     color: var(--accent-color);
@@ -569,6 +549,10 @@ const truncatedDescription = isLongDescription
   }
 
   @media (max-width: 900px) {
+    .video-breadcrumb {
+      display: none;
+    }
+
     .video-watch-layout {
       grid-template-columns: 1fr;
     }
