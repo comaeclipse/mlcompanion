@@ -31,3 +31,6 @@ pnpm-debug.log*
 CLAUDE.md
 
 .env*.local
+
+# local notes
+db-notes.md
