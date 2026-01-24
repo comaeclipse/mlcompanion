@@ -133,12 +133,6 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
   });
 
   const getBookHref = (book: Book) => `/book/${slugifyTitle(book.title)}`;
-  const handleCardKey = (event: KeyboardEvent, href: string) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      window.location.href = href;
-    }
-  };
 
   return (
     <>
@@ -226,18 +220,13 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
       {viewMode === "list" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           {sortedBooks.map((book) => (
-            <div
+            <a
               key={book.id}
-              role="link"
-              tabIndex={0}
-              onClick={() => {
-                window.location.href = getBookHref(book);
-              }}
-              onKeyDown={(event) => handleCardKey(event, getBookHref(book))}
+              href={getBookHref(book)}
               style={{ textDecoration: "none", color: "inherit" }}
             >
               <BookCard book={book} />
-            </div>
+            </a>
           ))}
         </div>
       ) : (
@@ -249,18 +238,13 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
           }}
         >
           {sortedBooks.map((book) => (
-            <div
+            <a
               key={book.id}
-              role="link"
-              tabIndex={0}
-              onClick={() => {
-                window.location.href = getBookHref(book);
-              }}
-              onKeyDown={(event) => handleCardKey(event, getBookHref(book))}
+              href={getBookHref(book)}
               style={{
                 textDecoration: "none",
                 color: "inherit",
-                cursor: "pointer",
+                display: "block",
                 borderRadius: "12px",
                 overflow: "hidden",
                 background: "var(--paper-color)",
@@ -392,7 +376,7 @@ export function BookLibraryWithToggle({ books }: BookLibraryWithToggleProps) {
                   </div>
                 )}
               </div>
-            </div>
+            </a>
           ))}
         </div>
       )}
