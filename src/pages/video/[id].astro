@@ -134,6 +134,27 @@ const truncatedDescription = isLongDescription
               </div>
             </div>
 
+            {(video.pros.length > 0 || video.cons.length > 0) && (
+              <div class="video-labels">
+                {video.pros.length > 0 && (
+                  <div class="label-row">
+                    <svg class="label-icon label-icon--pro" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                    {video.pros.map((pro: string) => (
+                      <span class="label-pill label-pill--pro">{pro}</span>
+                    ))}
+                  </div>
+                )}
+                {video.cons.length > 0 && (
+                  <div class="label-row">
+                    <svg class="label-icon label-icon--con" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+                    {video.cons.map((con: string) => (
+                      <span class="label-pill label-pill--con">{con}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {video.description && (
               <div class="video-description" data-long={isLongDescription ? "true" : undefined}>
                 <p class="video-description-text">{truncatedDescription}</p>
@@ -342,6 +363,51 @@ const truncatedDescription = isLongDescription
     padding: 4px 10px;
     border-radius: 999px;
     font-family: "Work Sans", "Segoe UI", sans-serif;
+  }
+
+  .video-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .label-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .label-icon {
+    flex-shrink: 0;
+  }
+
+  .label-icon--pro {
+    color: #2e7d32;
+  }
+
+  .label-icon--con {
+    color: #c62828;
+  }
+
+  .label-pill {
+    font-size: 0.78rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-family: "Work Sans", "Segoe UI", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .label-pill--pro {
+    background: rgba(46, 125, 50, 0.1);
+    color: #2e7d32;
+  }
+
+  .label-pill--con {
+    background: rgba(198, 40, 40, 0.1);
+    color: #c62828;
   }
 
   .video-description {

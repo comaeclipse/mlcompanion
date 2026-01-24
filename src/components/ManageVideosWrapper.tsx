@@ -10,6 +10,8 @@ interface Video {
   channelName?: string | null;
   publishedAt?: Date | string | null;
   tags: string[];
+  pros: string[];
+  cons: string[];
   category?: string | null;
 }
 

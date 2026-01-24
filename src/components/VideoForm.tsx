@@ -13,6 +13,8 @@ interface Video {
   channelName?: string;
   publishedAt?: string | Date;
   tags: string[];
+  pros: string[];
+  cons: string[];
   category?: string;
 }
 
@@ -45,6 +47,8 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
     channelName: "",
     publishedAt: "",
     tags: [],
+    pros: [],
+    cons: [],
     category: "",
   });
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -92,6 +96,8 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
         channelName: "",
         publishedAt: "",
         tags: [],
+        pros: [],
+        cons: [],
         category: "",
       });
       setLinkedBooks([]);
@@ -346,6 +352,28 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
         <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.25rem" }}>
           Separate tags with commas. Tags can contain spaces.
         </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Pros (comma-separated)</label>
+        <Input
+          value={formData.pros.join(", ")}
+          onChange={(e) =>
+            setFormData({ ...formData, pros: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })
+          }
+          placeholder="essential, well-sourced, accessible"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Cons (comma-separated)</label>
+        <Input
+          value={formData.cons.join(", ")}
+          onChange={(e) =>
+            setFormData({ ...formData, cons: e.target.value.split(",").map(t => t.trim()).filter(Boolean) })
+          }
+          placeholder="libcoded, outdated, oversimplified"
+        />
       </div>
 
       <div>

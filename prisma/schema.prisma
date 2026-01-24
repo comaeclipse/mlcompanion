@@ -120,6 +120,8 @@ model Video {
   publishedAt  DateTime?
 
   tags        String[]
+  pros        String[]
+  cons        String[]
   category    String?
   order       Int      @default(0)
   isPublished Boolean  @default(true)

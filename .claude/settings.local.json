@@ -65,7 +65,13 @@
       "Bash(npx prisma db push)",
       "Bash(git restore:*)",
       "WebFetch(domain:mlcompanion.vercel.app)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(git config:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep:*)",
+      "Bash(set -a)",
+      "Bash(source .env.vercel)",
+      "Bash(set +a)"
     ]
   }
 }

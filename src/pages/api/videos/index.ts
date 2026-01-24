@@ -21,7 +21,7 @@ export const POST: APIRoute = async (context) => {
   if (authResult instanceof Response) return authResult;
 
   const body = await context.request.json();
-  const { title, description, url, tags, category, duration, channelName, channelId, publishedAt, thumbnailUrl: providedThumbnail } = body;
+  const { title, description, url, tags, pros, cons, category, duration, channelName, channelId, publishedAt, thumbnailUrl: providedThumbnail } = body;
 
   if (!title || !url) {
     return new Response(JSON.stringify({ error: "Title and URL required" }), {
@@ -67,6 +67,8 @@ export const POST: APIRoute = async (context) => {
       channelId: channelId || null,
       publishedAt: publishedAt ? new Date(publishedAt) : null,
       tags: tags || [],
+      pros: pros || [],
+      cons: cons || [],
       category,
       duration,
       createdBy: authResult.user.id,
