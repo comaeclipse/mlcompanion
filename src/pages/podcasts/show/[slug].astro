@@ -28,6 +28,10 @@ if (!podcast) {
 }
 
 const pageTitle = `${podcast.name} - MLCompanion`;
+
+// Extract embed IDs from URLs
+const spotifyId = podcast.spotifyUrl?.match(/show\/([a-zA-Z0-9]+)/)?.[1] || null;
+const appleId = podcast.appleUrl?.match(/id(\d+)/)?.[1] || null;
 ---
 
 <Layout title={pageTitle}>
@@ -106,6 +110,36 @@ const pageTitle = `${podcast.name} - MLCompanion`;
         )}
       </div>
     </div>
+
+    {(spotifyId || appleId) && (
+      <section class="embed-section">
+        <h2 class="episodes-heading">Listen</h2>
+        <div class="embed-container">
+          {spotifyId ? (
+            <iframe
+              style="border-radius:12px"
+              src={`https://open.spotify.com/embed/show/${spotifyId}?utm_source=generator`}
+              width="100%"
+              height="352"
+              frameBorder="0"
+              allowfullscreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            />
+          ) : appleId && (
+            <iframe
+              allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
+              frameBorder="0"
+              height="450"
+              style="width:100%;max-width:660px;overflow:hidden;border-radius:10px;"
+              sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+              src={`https://embed.podcasts.apple.com/us/podcast/${podcast.name.toLowerCase().replace(/\s+/g, '-')}/id${appleId}`}
+              loading="lazy"
+            />
+          )}
+        </div>
+      </section>
+    )}
 
     <section class="episodes-section">
       <h2 class="episodes-heading">Episodes</h2>
@@ -252,6 +286,16 @@ const pageTitle = `${podcast.name} - MLCompanion`;
 
   .podcast-tags .pill:hover {
     opacity: 0.7;
+  }
+
+  .embed-section {
+    margin-top: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .embed-container {
+    margin-top: 1rem;
   }
 
   .episodes-section {
