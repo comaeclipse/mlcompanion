@@ -5,6 +5,8 @@ import { ManageBooksWrapper } from "./ManageBooksWrapper";
 import { ManageVideosWrapper } from "./ManageVideosWrapper";
 import { ManageAuthorsWrapper } from "./ManageAuthorsWrapper";
 import { ManageChannelsWrapper } from "./ManageChannelsWrapper";
+import { ManagePodcastsWrapper } from "./ManagePodcastsWrapper";
+import { ManageEpisodesWrapper } from "./ManageEpisodesWrapper";
 
 interface Book {
   id: string;
@@ -78,36 +80,76 @@ interface Channel {
   };
 }
 
+interface Podcast {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  feedUrl?: string | null;
+  websiteUrl?: string | null;
+  spotifyUrl?: string | null;
+  appleUrl?: string | null;
+  author?: string | null;
+  tags: string[];
+  _count?: { episodes: number };
+  episodes?: Episode[];
+}
+
+interface Episode {
+  id: string;
+  title: string;
+  description?: string | null;
+  audioUrl?: string | null;
+  duration?: string | null;
+  publishedAt?: string | Date | null;
+  episodeNumber?: number | null;
+  seasonNumber?: number | null;
+  externalUrl?: string | null;
+  tags: string[];
+  pros: string[];
+  cons: string[];
+  podcastId: string;
+}
+
 interface ManagePortalProps {
-  initialTab: "books" | "videos" | "authors" | "channels";
+  initialTab: "books" | "videos" | "authors" | "channels" | "podcasts";
   initialBooks?: Book[] | null;
   initialVideos?: Video[] | null;
   initialAuthors?: Author[] | null;
   initialChannels?: Channel[] | null;
+  initialPodcasts?: Podcast[] | null;
 }
 
-export function ManagePortal({ initialTab, initialBooks, initialVideos, initialAuthors, initialChannels }: ManagePortalProps) {
-  const [activeTab, setActiveTab] = useState<"books" | "videos" | "authors" | "channels">(initialTab);
+export function ManagePortal({ initialTab, initialBooks, initialVideos, initialAuthors, initialChannels, initialPodcasts }: ManagePortalProps) {
+  const [activeTab, setActiveTab] = useState<"books" | "videos" | "authors" | "channels" | "podcasts">(initialTab);
   const [books, setBooks] = useState<Book[] | null>(initialBooks ?? null);
   const [videos, setVideos] = useState<Video[] | null>(initialVideos ?? null);
   const [authors, setAuthors] = useState<Author[] | null>(initialAuthors ?? null);
   const [channels, setChannels] = useState<Channel[] | null>(initialChannels ?? null);
+  const [podcasts, setPodcasts] = useState<Podcast[] | null>(initialPodcasts ?? null);
   const [booksLoading, setBooksLoading] = useState(false);
   const [videosLoading, setVideosLoading] = useState(false);
   const [authorsLoading, setAuthorsLoading] = useState(false);
   const [channelsLoading, setChannelsLoading] = useState(false);
+  const [podcastsLoading, setPodcastsLoading] = useState(false);
   const [booksError, setBooksError] = useState("");
   const [videosError, setVideosError] = useState("");
   const [authorsError, setAuthorsError] = useState("");
   const [channelsError, setChannelsError] = useState("");
+  const [podcastsError, setPodcastsError] = useState("");
   const [bookModalOpen, setBookModalOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [authorModalOpen, setAuthorModalOpen] = useState(false);
   const [channelModalOpen, setChannelModalOpen] = useState(false);
+  const [podcastModalOpen, setPodcastModalOpen] = useState(false);
+  const [episodeModalOpen, setEpisodeModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [editingAuthor, setEditingAuthor] = useState<Author | null>(null);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
+  const [editingPodcast, setEditingPodcast] = useState<Podcast | null>(null);
+  const [editingEpisode, setEditingEpisode] = useState<Episode | null>(null);
 
   const fetchBooks = async () => {
     setBooksLoading(true);
@@ -193,6 +235,27 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     }
   };
 
+  const fetchPodcasts = async () => {
+    setPodcastsLoading(true);
+    setPodcastsError("");
+    try {
+      const response = await fetch("/api/manage/podcasts", { credentials: "include" });
+      if (response.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Failed to load podcasts");
+      }
+      const data = await response.json();
+      setPodcasts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setPodcastsError("Failed to load podcasts. Please try again.");
+    } finally {
+      setPodcastsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -224,16 +287,26 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     }
   }, [activeTab, channels, channelsLoading]);
 
-  const handleTabChange = (tab: "books" | "videos" | "authors" | "channels") => {
+  useEffect(() => {
+    if (activeTab === "podcasts" && podcasts === null && !podcastsLoading) {
+      void fetchPodcasts();
+    }
+  }, [activeTab, podcasts, podcastsLoading]);
+
+  const handleTabChange = (tab: "books" | "videos" | "authors" | "channels" | "podcasts") => {
     setActiveTab(tab);
     setBookModalOpen(false);
     setVideoModalOpen(false);
     setAuthorModalOpen(false);
     setChannelModalOpen(false);
+    setPodcastModalOpen(false);
+    setEpisodeModalOpen(false);
     setEditingBook(null);
     setEditingVideo(null);
     setEditingAuthor(null);
     setEditingChannel(null);
+    setEditingPodcast(null);
+    setEditingEpisode(null);
   };
 
   const handleAddClick = () => {
@@ -252,8 +325,74 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
       setChannelModalOpen(true);
       return;
     }
+    if (activeTab === "podcasts") {
+      setEditingPodcast(null);
+      setPodcastModalOpen(true);
+      return;
+    }
     setEditingAuthor(null);
     setAuthorModalOpen(true);
+  };
+
+  const handleAddEpisode = (podcastId: string) => {
+    setEditingEpisode({ id: undefined, title: "", description: "", tags: [], pros: [], cons: [], podcastId } as unknown as Episode);
+    setEpisodeModalOpen(true);
+  };
+
+  const handleEditPodcast = (podcastId: string) => {
+    const podcast = podcasts?.find((item) => item.id === podcastId);
+    if (podcast) {
+      setEditingPodcast(podcast);
+      setPodcastModalOpen(true);
+    }
+  };
+
+  const handleDeletePodcast = async (podcastId: string) => {
+    if (!confirm("Are you sure you want to delete this podcast and all its episodes?")) return;
+    try {
+      const response = await fetch(`/api/podcasts/${podcastId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      alert(`Failed to delete podcast: ${data.error || "Unknown error"}`);
+    } catch (err) {
+      alert("Failed to delete podcast. Please try again.");
+    }
+  };
+
+  const handleEditEpisode = (episodeId: string) => {
+    if (!podcasts) return;
+    for (const podcast of podcasts) {
+      const episode = podcast.episodes?.find((ep) => ep.id === episodeId);
+      if (episode) {
+        setEditingEpisode({ ...episode, podcastId: podcast.id } as Episode);
+        setEpisodeModalOpen(true);
+        return;
+      }
+    }
+  };
+
+  const handleDeleteEpisode = async (episodeId: string) => {
+    if (!confirm("Are you sure you want to delete this episode?")) return;
+    try {
+      const response = await fetch(`/api/episodes/${episodeId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (response.ok) {
+        window.location.reload();
+        return;
+      }
+      const data = await response.json().catch(() => ({}));
+      alert(`Failed to delete episode: ${data.error || "Unknown error"}`);
+    } catch (err) {
+      alert("Failed to delete episode. Please try again.");
+    }
   };
 
   const handleEditBook = (bookId: string) => {
@@ -849,6 +988,119 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     );
   };
 
+  const renderPodcasts = () => {
+    if (podcastsLoading) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">Loading podcasts...</p>
+        </div>
+      );
+    }
+
+    if (podcastsError) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">{podcastsError}</p>
+        </div>
+      );
+    }
+
+    if (!podcasts || podcasts.length === 0) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">No podcasts yet. Click "+ Add Podcast" to get started!</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="video-admin-list">
+        {podcasts.map((podcast) => (
+          <div key={podcast.id} className="panel" style={{ padding: "0.75rem" }}>
+            <div style={{ display: "flex", gap: "1rem", alignItems: "start" }}>
+              <div style={{ flexShrink: 0 }}>
+                {podcast.thumbnailUrl ? (
+                  <img
+                    src={podcast.thumbnailUrl}
+                    alt={podcast.name}
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      objectFit: "cover",
+                      borderRadius: "12px",
+                      background: "#222",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "12px",
+                      background: "linear-gradient(135deg, #7b2d8b, #4a1a5e)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "2rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {podcast.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ margin: "0 0 0.25rem 0", fontSize: "1rem" }}>{podcast.name}</h3>
+                {podcast.author && (
+                  <p className="muted" style={{ margin: "0 0 0.25rem 0", fontSize: "0.85rem" }}>
+                    {podcast.author}
+                  </p>
+                )}
+                <p className="muted" style={{ margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>
+                  {podcast._count?.episodes || 0} episode{(podcast._count?.episodes || 0) !== 1 ? "s" : ""}
+                </p>
+
+                {/* Episodes list */}
+                {podcast.episodes && podcast.episodes.length > 0 && (
+                  <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-color)" }}>
+                    {podcast.episodes.map((ep) => (
+                      <div key={ep.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.25rem 0" }}>
+                        <span style={{ fontSize: "0.8rem", color: "var(--muted-color)", minWidth: "24px" }}>
+                          {ep.episodeNumber || "•"}
+                        </span>
+                        <span style={{ fontSize: "0.85rem", flex: 1 }}>{ep.title}</span>
+                        <button className="button button-sm" onClick={() => handleEditEpisode(ep.id)} style={{ fontSize: "0.7rem", padding: "2px 8px" }}>
+                          Edit
+                        </button>
+                        <button className="button button-sm button-danger" onClick={() => handleDeleteEpisode(ep.id)} style={{ fontSize: "0.7rem", padding: "2px 8px" }}>
+                          Del
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flexShrink: 0 }}>
+                <button className="button button-sm" onClick={() => handleAddEpisode(podcast.id)}>
+                  + Episode
+                </button>
+                <button className="button button-sm" onClick={() => handleEditPodcast(podcast.id)}>
+                  Edit
+                </button>
+                <button className="button button-sm button-danger" onClick={() => handleDeletePodcast(podcast.id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="page">
       <header className="hero">
@@ -858,7 +1110,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
             <p className="muted">Add, edit, and organize your books, videos, and authors</p>
           </div>
           <button className="button" onClick={handleAddClick}>
-            {activeTab === "books" ? "+ Add Book" : activeTab === "videos" ? "+ Add Video" : activeTab === "channels" ? "+ Add Channel" : "+ Add Author"}
+            {activeTab === "books" ? "+ Add Book" : activeTab === "videos" ? "+ Add Video" : activeTab === "channels" ? "+ Add Channel" : activeTab === "podcasts" ? "+ Add Podcast" : "+ Add Author"}
           </button>
         </div>
 
@@ -898,6 +1150,17 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
           </button>
           <button
             className="button"
+            onClick={() => handleTabChange("podcasts")}
+            style={
+              activeTab === "podcasts"
+                ? {}
+                : { background: "transparent", color: "var(--accent-color)", border: "1px solid var(--accent-color)" }
+            }
+          >
+            Podcasts
+          </button>
+          <button
+            className="button"
             onClick={() => handleTabChange("authors")}
             style={
               activeTab === "authors"
@@ -911,7 +1174,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
       </header>
 
       <section>
-        {activeTab === "books" ? renderBooks() : activeTab === "videos" ? renderVideos() : activeTab === "channels" ? renderChannels() : renderAuthors()}
+        {activeTab === "books" ? renderBooks() : activeTab === "videos" ? renderVideos() : activeTab === "channels" ? renderChannels() : activeTab === "podcasts" ? renderPodcasts() : renderAuthors()}
       </section>
 
       <ManageBooksWrapper
@@ -944,6 +1207,48 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
         onClose={() => {
           setAuthorModalOpen(false);
           setEditingAuthor(null);
+        }}
+      />
+      <ManagePodcastsWrapper
+        podcast={editingPodcast ? {
+          id: editingPodcast.id,
+          name: editingPodcast.name,
+          description: editingPodcast.description || "",
+          thumbnailUrl: editingPodcast.thumbnailUrl || undefined,
+          feedUrl: editingPodcast.feedUrl || undefined,
+          websiteUrl: editingPodcast.websiteUrl || undefined,
+          spotifyUrl: editingPodcast.spotifyUrl || undefined,
+          appleUrl: editingPodcast.appleUrl || undefined,
+          author: editingPodcast.author || undefined,
+          tags: editingPodcast.tags,
+        } : null}
+        isOpen={podcastModalOpen}
+        onClose={() => {
+          setPodcastModalOpen(false);
+          setEditingPodcast(null);
+        }}
+      />
+      <ManageEpisodesWrapper
+        episode={editingEpisode ? {
+          id: editingEpisode.id,
+          title: editingEpisode.title,
+          description: editingEpisode.description || "",
+          audioUrl: editingEpisode.audioUrl || undefined,
+          duration: editingEpisode.duration || undefined,
+          publishedAt: editingEpisode.publishedAt || undefined,
+          episodeNumber: editingEpisode.episodeNumber,
+          seasonNumber: editingEpisode.seasonNumber,
+          externalUrl: editingEpisode.externalUrl || undefined,
+          tags: editingEpisode.tags,
+          pros: editingEpisode.pros,
+          cons: editingEpisode.cons,
+          podcastId: editingEpisode.podcastId,
+        } : null}
+        podcasts={podcasts?.map((p) => ({ id: p.id, name: p.name })) || []}
+        isOpen={episodeModalOpen}
+        onClose={() => {
+          setEpisodeModalOpen(false);
+          setEditingEpisode(null);
         }}
       />
     </div>

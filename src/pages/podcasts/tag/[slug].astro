@@ -1,0 +1,72 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import Breadcrumb from "../../../components/Breadcrumb.astro";
+import { PodcastLibraryWithToggle } from "../../../components/PodcastLibraryWithToggle";
+import { prisma } from "../../../lib/prisma";
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect("/podcasts");
+}
+
+const tagName = slug.replace(/-/g, " ");
+
+const podcasts = await prisma.podcast.findMany({
+  where: {
+    isPublished: true,
+    tags: { has: tagName },
+  },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  include: {
+    _count: { select: { episodes: true } },
+  },
+});
+
+// Also try case-insensitive match if no results
+let finalPodcasts = podcasts;
+if (podcasts.length === 0) {
+  const allPodcasts = await prisma.podcast.findMany({
+    where: { isPublished: true },
+    orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+    include: {
+      _count: { select: { episodes: true } },
+    },
+  });
+  finalPodcasts = allPodcasts.filter((p) =>
+    p.tags.some((t) => t.toLowerCase().replace(/\s+/g, "-") === slug)
+  );
+}
+
+const displayTag = finalPodcasts.length > 0
+  ? finalPodcasts[0].tags.find((t: string) => t.toLowerCase().replace(/\s+/g, "-") === slug) || tagName
+  : tagName;
+---
+
+<Layout title={`${displayTag} Podcasts - MLCompanion`}>
+  <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Podcasts", href: "/podcasts" },
+      { label: displayTag }
+    ]} />
+
+    <header class="hero">
+      <div>
+        <h1 style="margin-bottom: 0.5rem;">🎙️ {displayTag}</h1>
+        <p class="muted" style="margin: 0;">Podcasts tagged with "{displayTag}"</p>
+      </div>
+    </header>
+
+    <section style="margin-top: 1.5rem;">
+      {finalPodcasts.length === 0 ? (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <p class="muted">No podcasts found with this tag.</p>
+          <a href="/podcasts" style="color: var(--accent-color);">Browse all podcasts</a>
+        </div>
+      ) : (
+        <PodcastLibraryWithToggle client:load podcasts={finalPodcasts} />
+      )}
+    </section>
+  </div>
+</Layout>

@@ -13,12 +13,13 @@ const session = result;
 
 const url = new URL(Astro.request.url);
 const tabParam = url.searchParams.get("tab");
-const activeTab = tabParam === "books" ? "books" : tabParam === "authors" ? "authors" : tabParam === "channels" ? "channels" : "videos";
+const activeTab = tabParam === "books" ? "books" : tabParam === "authors" ? "authors" : tabParam === "channels" ? "channels" : tabParam === "podcasts" ? "podcasts" : "videos";
 
 let books = null;
 let videos = null;
 let authors = null;
 let channels = null;
+let podcasts = null;
 
 if (activeTab === "books") {
   books = await prisma.book.findMany({
@@ -46,6 +47,21 @@ if (activeTab === "books") {
       _count: { select: { videos: true } }
     }
   });
+} else if (activeTab === "podcasts") {
+  podcasts = await prisma.podcast.findMany({
+    where: {
+      createdBy: session.user.id,
+      isPublished: true,
+    },
+    orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+    include: {
+      _count: { select: { episodes: true } },
+      episodes: {
+        where: { isPublished: true },
+        orderBy: [{ order: "asc" }, { publishedAt: "desc" }, { createdAt: "desc" }],
+      },
+    },
+  });
 } else {
   // Authors tab - show all authors (global editing model)
   authors = await prisma.author.findMany({
@@ -64,5 +80,5 @@ if (activeTab === "books") {
       { label: "Manage" }
     ]} />
   </div>
-  <ManagePortal client:load initialTab={activeTab} initialBooks={books} initialVideos={videos} initialAuthors={authors} initialChannels={channels} />
+  <ManagePortal client:load initialTab={activeTab} initialBooks={books} initialVideos={videos} initialAuthors={authors} initialChannels={channels} initialPodcasts={podcasts} />
 </Layout>

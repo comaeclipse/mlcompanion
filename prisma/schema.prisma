@@ -59,6 +59,8 @@ model User {
   books         Book[]
   authors       Author[]
   channels      Channel[]
+  podcasts      Podcast[]
+  episodes      Episode[]
 }
 
 model Account {
@@ -266,4 +268,67 @@ model VideoBook {
   @@unique([videoId, bookId])
   @@index([videoId])
   @@index([bookId])
+}
+
+model Podcast {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  name          String
+  slug          String   @unique
+  description   String?  @db.Text
+  thumbnailUrl  String?
+  feedUrl       String?
+  websiteUrl    String?
+  spotifyUrl    String?
+  appleUrl      String?
+  author        String?
+
+  tags          String[]
+  order         Int      @default(0)
+  isPublished   Boolean  @default(true)
+
+  episodes      Episode[]
+
+  createdBy     String
+  creator       User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([isPublished])
+  @@index([slug])
+  @@index([tags], type: Gin)
+}
+
+model Episode {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  title         String
+  description   String?  @db.Text
+  audioUrl      String?
+  duration      String?
+  publishedAt   DateTime?
+  thumbnailUrl  String?
+  episodeNumber Int?
+  seasonNumber  Int?
+  externalUrl   String?
+
+  tags          String[]
+  pros          String[]
+  cons          String[]
+  order         Int      @default(0)
+  isPublished   Boolean  @default(true)
+
+  podcastId     String
+  podcast       Podcast  @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+
+  createdBy     String
+  creator       User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([isPublished])
+  @@index([podcastId])
+  @@index([tags], type: Gin)
 }

@@ -1,0 +1,42 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { PodcastLibraryWithToggle } from "../../components/PodcastLibraryWithToggle";
+import { prisma } from "../../lib/prisma";
+
+const podcasts = await prisma.podcast.findMany({
+  where: { isPublished: true },
+  orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  include: {
+    _count: { select: { episodes: true } },
+  },
+});
+---
+
+<Layout title="Podcast Library - MLCompanion">
+  <div class="page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Podcasts" }
+    ]} />
+
+    <header class="hero">
+      <div style="display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap;">
+        <div>
+          <h1 style="margin-bottom: 0.5rem;">🎙️ Podcast Library</h1>
+          <p class="muted" style="margin: 0;">Curated podcasts on Marxist-Leninist theory and practice</p>
+        </div>
+      </div>
+    </header>
+
+    <section style="margin-top: 1.5rem;">
+      {podcasts.length === 0 ? (
+        <div class="panel" style="text-align: center; padding: 3rem;">
+          <p class="muted">No podcasts available yet. Check back soon!</p>
+        </div>
+      ) : (
+        <PodcastLibraryWithToggle client:load podcasts={podcasts} />
+      )}
+    </section>
+  </div>
+</Layout>
