@@ -12,6 +12,7 @@ interface Podcast {
   websiteUrl?: string;
   spotifyUrl?: string;
   appleUrl?: string;
+  soundcloudUrl?: string;
   author?: string;
   tags: string[];
 }
@@ -31,6 +32,7 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
     websiteUrl: "",
     spotifyUrl: "",
     appleUrl: "",
+    soundcloudUrl: "",
     author: "",
     tags: [],
   });
@@ -50,6 +52,7 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
         websiteUrl: "",
         spotifyUrl: "",
         appleUrl: "",
+        soundcloudUrl: "",
         author: "",
         tags: [],
       });
@@ -57,7 +60,7 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
   }, [podcast]);
 
   const fetchFeed = async () => {
-    if (!formData.feedUrl) return;
+    if (!formData.feedUrl && !formData.appleUrl && !formData.soundcloudUrl) return;
     setFeedLoading(true);
     setError("");
 
@@ -65,7 +68,11 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
       const response = await fetch("/api/podcasts/feed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ feedUrl: formData.feedUrl }),
+        body: JSON.stringify({
+          feedUrl: formData.feedUrl,
+          appleUrl: formData.appleUrl,
+          soundcloudUrl: formData.soundcloudUrl,
+        }),
       });
 
       if (!response.ok) {
@@ -82,6 +89,7 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
         author: prev.author || data.podcast.author || "",
         thumbnailUrl: prev.thumbnailUrl || data.podcast.imageUrl || "",
         websiteUrl: prev.websiteUrl || data.podcast.link || "",
+        feedUrl: prev.feedUrl || data.feedUrl || "",
       }));
     } catch {
       setError("Network error fetching feed");
@@ -136,7 +144,11 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
             placeholder="https://feeds.example.com/podcast.xml"
             style={{ flex: 1 }}
           />
-          <Button type="button" onClick={fetchFeed} disabled={feedLoading || !formData.feedUrl}>
+          <Button
+            type="button"
+            onClick={fetchFeed}
+            disabled={feedLoading || (!formData.feedUrl && !formData.appleUrl && !formData.soundcloudUrl)}
+          >
             {feedLoading ? "..." : "Fetch"}
           </Button>
         </div>
@@ -195,6 +207,15 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
           value={formData.appleUrl || ""}
           onChange={(e) => setFormData({ ...formData, appleUrl: e.target.value })}
           placeholder="https://podcasts.apple.com/..."
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">SoundCloud URL</label>
+        <Input
+          value={formData.soundcloudUrl || ""}
+          onChange={(e) => setFormData({ ...formData, soundcloudUrl: e.target.value })}
+          placeholder="https://soundcloud.com/..."
         />
       </div>
 

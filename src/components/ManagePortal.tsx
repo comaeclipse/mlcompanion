@@ -90,6 +90,7 @@ interface Podcast {
   websiteUrl?: string | null;
   spotifyUrl?: string | null;
   appleUrl?: string | null;
+  soundcloudUrl?: string | null;
   author?: string | null;
   tags: string[];
   _count?: { episodes: number };
@@ -1219,6 +1220,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
           websiteUrl: editingPodcast.websiteUrl || undefined,
           spotifyUrl: editingPodcast.spotifyUrl || undefined,
           appleUrl: editingPodcast.appleUrl || undefined,
+          soundcloudUrl: editingPodcast.soundcloudUrl || undefined,
           author: editingPodcast.author || undefined,
           tags: editingPodcast.tags,
         } : null}

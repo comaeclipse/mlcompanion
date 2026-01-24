@@ -9,6 +9,7 @@ interface Podcast {
   websiteUrl?: string;
   spotifyUrl?: string;
   appleUrl?: string;
+  soundcloudUrl?: string;
   author?: string;
   tags: string[];
 }

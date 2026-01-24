@@ -75,6 +75,11 @@ const pageTitle = `${podcast.name} - MLCompanion`;
               Apple Podcasts
             </a>
           )}
+          {podcast.soundcloudUrl && (
+            <a href={podcast.soundcloudUrl} target="_blank" rel="noopener noreferrer" class="podcast-link-btn podcast-link-soundcloud">
+              SoundCloud
+            </a>
+          )}
           {podcast.websiteUrl && (
             <a href={podcast.websiteUrl} target="_blank" rel="noopener noreferrer" class="podcast-link-btn">
               Website
@@ -219,6 +224,15 @@ const pageTitle = `${podcast.name} - MLCompanion`;
     font-weight: 500;
     font-family: "Work Sans", "Segoe UI", sans-serif;
     transition: background 0.15s;
+  }
+
+  .podcast-link-soundcloud {
+    background: rgba(255, 85, 0, 0.15);
+    color: #c44a00;
+  }
+
+  .podcast-link-soundcloud:hover {
+    background: rgba(255, 85, 0, 0.25);
   }
 
   .podcast-link-btn:hover {

@@ -58,6 +58,7 @@ export const PUT: APIRoute = async (context) => {
       websiteUrl: body.websiteUrl,
       spotifyUrl: body.spotifyUrl,
       appleUrl: body.appleUrl,
+      soundcloudUrl: body.soundcloudUrl,
       author: body.author,
       tags: body.tags,
       isPublished: body.isPublished,

@@ -283,6 +283,7 @@ model Podcast {
   websiteUrl    String?
   spotifyUrl    String?
   appleUrl      String?
+  soundcloudUrl String?
   author        String?
 
   tags          String[]

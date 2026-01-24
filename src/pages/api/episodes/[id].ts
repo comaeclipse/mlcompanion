@@ -6,7 +6,17 @@ export const GET: APIRoute = async ({ params }) => {
   const episode = await prisma.episode.findUnique({
     where: { id: params.id },
     include: {
-      podcast: { select: { id: true, name: true, slug: true, thumbnailUrl: true, spotifyUrl: true, appleUrl: true } },
+      podcast: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          thumbnailUrl: true,
+          spotifyUrl: true,
+          appleUrl: true,
+          soundcloudUrl: true,
+        },
+      },
     },
   });
 

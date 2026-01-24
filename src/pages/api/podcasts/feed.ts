@@ -7,17 +7,69 @@ export const POST: APIRoute = async (context) => {
   if (authResult instanceof Response) return authResult;
 
   const body = await context.request.json();
-  const { feedUrl } = body;
+  const { feedUrl, appleUrl, soundcloudUrl } = body;
 
-  if (!feedUrl || !validateFeedUrl(feedUrl)) {
-    return new Response(JSON.stringify({ error: "Valid feed URL is required" }), {
+  if (!feedUrl && !appleUrl && !soundcloudUrl) {
+    return new Response(JSON.stringify({ error: "A feed, Apple Podcasts, or SoundCloud URL is required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
+  const resolveAppleFeedUrl = async (url: string): Promise<string | null> => {
+    const idMatch = url.match(/id(\d+)/);
+    if (!idMatch) return null;
+
+    const lookupUrl = `https://itunes.apple.com/lookup?id=${idMatch[1]}`;
+    const response = await fetch(lookupUrl, { headers: { "User-Agent": "MLCompanion/1.0" } });
+    if (!response.ok) return null;
+
+    const data = await response.json().catch(() => null);
+    if (!data || !Array.isArray(data.results) || data.results.length === 0) return null;
+
+    return data.results[0]?.feedUrl || null;
+  };
+
+  const resolveSoundcloudFeedUrl = async (url: string): Promise<string | null> => {
+    const oembedUrl = `https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`;
+    const response = await fetch(oembedUrl, { headers: { "User-Agent": "MLCompanion/1.0" } });
+    if (!response.ok) return null;
+
+    const data = await response.json().catch(() => null);
+    const html = typeof data?.html === "string" ? data.html : "";
+    const match = html.match(/api\.soundcloud\.com\/(users|playlists)\/(\d+)/);
+    if (!match) return null;
+
+    if (match[1] === "users") {
+      return `https://feeds.soundcloud.com/users/soundcloud:users:${match[2]}/sounds.rss`;
+    }
+
+    if (match[1] === "playlists") {
+      return `https://feeds.soundcloud.com/playlists/soundcloud:playlists:${match[2]}/sounds.rss`;
+    }
+
+    return null;
+  };
+
   try {
-    const response = await fetch(feedUrl, {
+    let resolvedFeedUrl = feedUrl;
+
+    if (!resolvedFeedUrl && appleUrl) {
+      resolvedFeedUrl = await resolveAppleFeedUrl(appleUrl);
+    }
+
+    if (!resolvedFeedUrl && soundcloudUrl) {
+      resolvedFeedUrl = await resolveSoundcloudFeedUrl(soundcloudUrl);
+    }
+
+    if (!resolvedFeedUrl || !validateFeedUrl(resolvedFeedUrl)) {
+      return new Response(JSON.stringify({ error: "Could not resolve a valid RSS feed URL" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const response = await fetch(resolvedFeedUrl, {
       headers: { "User-Agent": "MLCompanion/1.0" },
     });
 
@@ -75,7 +127,7 @@ export const POST: APIRoute = async (context) => {
       count++;
     }
 
-    return new Response(JSON.stringify({ podcast: podcastInfo, episodes: items }), {
+    return new Response(JSON.stringify({ podcast: podcastInfo, episodes: items, feedUrl: resolvedFeedUrl }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

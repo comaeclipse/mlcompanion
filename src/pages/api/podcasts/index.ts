@@ -23,7 +23,7 @@ export const POST: APIRoute = async (context) => {
   if (authResult instanceof Response) return authResult;
 
   const body = await context.request.json();
-  const { name, description, thumbnailUrl, feedUrl, websiteUrl, spotifyUrl, appleUrl, author, tags } = body;
+  const { name, description, thumbnailUrl, feedUrl, websiteUrl, spotifyUrl, appleUrl, soundcloudUrl, author, tags } = body;
 
   if (!name) {
     return new Response(JSON.stringify({ error: "Name is required" }), {
@@ -52,6 +52,7 @@ export const POST: APIRoute = async (context) => {
       websiteUrl: websiteUrl || null,
       spotifyUrl: spotifyUrl || null,
       appleUrl: appleUrl || null,
+      soundcloudUrl: soundcloudUrl || null,
       author: author || null,
       tags: tags || [],
       createdBy: authResult.user.id,
