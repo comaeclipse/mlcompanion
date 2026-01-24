@@ -1,4 +1,4 @@
-import { useState, useEffect, type KeyboardEvent } from "react";
+import { useState, useEffect } from "react";
 import { LayoutList, Grid2x2, ArrowUpAZ, ArrowDownAZ, CalendarArrowDown, CalendarArrowUp } from "lucide-react";
 import { BookCard } from "./BookCard";
 import { BookFilters, type BookFilters as BookFiltersType } from "./BookFilters";
