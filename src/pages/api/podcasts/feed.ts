@@ -1,6 +1,14 @@
 import type { APIRoute } from "astro";
+import { XMLParser } from "fast-xml-parser";
 import { requireAuth } from "../../../lib/auth-utils";
 import { validateFeedUrl } from "../../../lib/podcast-utils";
+import {
+  getPodcastByFeedUrl,
+  getPodcastByItunesId,
+  getEpisodes,
+  formatDuration,
+  isPodcastIndexConfigured,
+} from "../../../lib/podcast-index";
 
 export const POST: APIRoute = async (context) => {
   const authResult = await requireAuth(context);
@@ -16,18 +24,19 @@ export const POST: APIRoute = async (context) => {
     });
   }
 
-  const resolveAppleFeedUrl = async (url: string): Promise<string | null> => {
+  const resolveAppleFeedUrl = async (url: string): Promise<{ feedUrl: string | null; itunesId: number | null }> => {
     const idMatch = url.match(/id(\d+)/);
-    if (!idMatch) return null;
+    if (!idMatch) return { feedUrl: null, itunesId: null };
 
-    const lookupUrl = `https://itunes.apple.com/lookup?id=${idMatch[1]}`;
+    const itunesId = parseInt(idMatch[1]);
+    const lookupUrl = `https://itunes.apple.com/lookup?id=${itunesId}`;
     const response = await fetch(lookupUrl, { headers: { "User-Agent": "MLCompanion/1.0" } });
-    if (!response.ok) return null;
+    if (!response.ok) return { feedUrl: null, itunesId };
 
     const data = await response.json().catch(() => null);
-    if (!data || !Array.isArray(data.results) || data.results.length === 0) return null;
+    if (!data || !Array.isArray(data.results) || data.results.length === 0) return { feedUrl: null, itunesId };
 
-    return data.results[0]?.feedUrl || null;
+    return { feedUrl: data.results[0]?.feedUrl || null, itunesId };
   };
 
   const resolveSoundcloudFeedUrl = async (url: string): Promise<string | null> => {
@@ -43,19 +52,20 @@ export const POST: APIRoute = async (context) => {
     if (match[1] === "users") {
       return `https://feeds.soundcloud.com/users/soundcloud:users:${match[2]}/sounds.rss`;
     }
-
     if (match[1] === "playlists") {
       return `https://feeds.soundcloud.com/playlists/soundcloud:playlists:${match[2]}/sounds.rss`;
     }
-
     return null;
   };
 
   try {
     let resolvedFeedUrl = feedUrl;
+    let itunesId: number | null = null;
 
     if (!resolvedFeedUrl && appleUrl) {
-      resolvedFeedUrl = await resolveAppleFeedUrl(appleUrl);
+      const result = await resolveAppleFeedUrl(appleUrl);
+      resolvedFeedUrl = result.feedUrl;
+      itunesId = result.itunesId;
     }
 
     if (!resolvedFeedUrl && soundcloudUrl) {
@@ -69,6 +79,54 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
+    // Primary: Podcast Index API
+    if (isPodcastIndexConfigured()) {
+      try {
+        let show = await getPodcastByFeedUrl(resolvedFeedUrl);
+        if (!show && itunesId) {
+          show = await getPodcastByItunesId(itunesId);
+        }
+
+        if (show) {
+          const episodes = await getEpisodes(show.id, 50);
+
+          const podcastInfo = {
+            title: show.title,
+            description: show.description,
+            author: show.author,
+            imageUrl: show.image,
+            link: show.link,
+            language: show.language || null,
+            categories: show.categories ? Object.values(show.categories) : [],
+            explicit: show.explicit || false,
+            episodeCount: show.episodeCount || episodes.length,
+          };
+
+          const items = episodes.map((ep) => ({
+            title: ep.title,
+            description: ep.description,
+            audioUrl: ep.enclosureUrl,
+            duration: formatDuration(ep.duration),
+            publishedAt: ep.datePublished ? new Date(ep.datePublished * 1000).toISOString() : null,
+            episodeNumber: ep.episode || null,
+            seasonNumber: ep.season || null,
+            episodeType: ep.episodeType || "full",
+            imageUrl: ep.image || null,
+            explicit: ep.explicit === 1,
+            link: ep.link || null,
+          }));
+
+          return new Response(JSON.stringify({ podcast: podcastInfo, episodes: items, feedUrl: resolvedFeedUrl }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      } catch {
+        // Fall through to XML parsing
+      }
+    }
+
+    // Fallback: Fetch and parse RSS with fast-xml-parser
     const response = await fetch(resolvedFeedUrl, {
       headers: { "User-Agent": "MLCompanion/1.0" },
     });
@@ -82,50 +140,66 @@ export const POST: APIRoute = async (context) => {
 
     const xml = await response.text();
 
-    // Basic XML parsing for RSS feed
-    const getTag = (src: string, tag: string): string => {
-      const match = src.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`));
-      return (match?.[1] || match?.[2] || "").trim();
-    };
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_",
+      textNodeName: "#text",
+      isArray: (name) => name === "item",
+    });
 
-    const getAttr = (src: string, tag: string, attr: string): string => {
-      const match = src.match(new RegExp(`<${tag}[^>]*${attr}=["']([^"']*)["']`));
-      return match?.[1] || "";
-    };
+    const parsed = parser.parse(xml);
+    const channel = parsed?.rss?.channel;
 
-    // Parse channel info
-    const channelMatch = xml.match(/<channel>([\s\S]*?)<item/);
-    const channelXml = channelMatch?.[1] || xml;
+    if (!channel) {
+      return new Response(JSON.stringify({ error: "Invalid RSS feed format" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const getText = (val: any): string => {
+      if (!val) return "";
+      if (typeof val === "string") return val.trim();
+      if (typeof val === "object" && val["#text"]) return String(val["#text"]).trim();
+      return String(val).trim();
+    };
 
     const podcastInfo = {
-      title: getTag(channelXml, "title"),
-      description: getTag(channelXml, "description") || getTag(channelXml, "itunes:summary"),
-      author: getTag(channelXml, "itunes:author") || getTag(channelXml, "managingEditor"),
-      imageUrl: getAttr(channelXml, "itunes:image", "href") || getTag(channelXml, "url"),
-      link: getTag(channelXml, "link"),
+      title: getText(channel.title),
+      description: getText(channel.description) || getText(channel["itunes:summary"]),
+      author: getText(channel["itunes:author"]) || getText(channel.managingEditor),
+      imageUrl: channel["itunes:image"]?.["@_href"] || getText(channel.image?.url) || "",
+      link: getText(channel.link),
+      language: getText(channel.language) || null,
+      categories: [] as string[],
+      explicit: getText(channel["itunes:explicit"]) === "yes" || getText(channel["itunes:explicit"]) === "true",
+      episodeCount: null,
     };
 
-    // Parse episodes (items)
-    const items: any[] = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-    let count = 0;
-
-    while ((match = itemRegex.exec(xml)) !== null && count < 50) {
-      const itemXml = match[1];
-      const durationRaw = getTag(itemXml, "itunes:duration");
-
-      items.push({
-        title: getTag(itemXml, "title"),
-        description: getTag(itemXml, "description") || getTag(itemXml, "itunes:summary"),
-        audioUrl: getAttr(itemXml, "enclosure", "url"),
-        duration: durationRaw,
-        publishedAt: getTag(itemXml, "pubDate") || null,
-        episodeNumber: parseInt(getTag(itemXml, "itunes:episode")) || null,
-        seasonNumber: parseInt(getTag(itemXml, "itunes:season")) || null,
-      });
-      count++;
+    // Extract categories
+    const itunesCategory = channel["itunes:category"];
+    if (itunesCategory) {
+      const cats = Array.isArray(itunesCategory) ? itunesCategory : [itunesCategory];
+      for (const cat of cats) {
+        if (cat?.["@_text"]) podcastInfo.categories.push(cat["@_text"]);
+      }
     }
+
+    // Parse episodes
+    const rawItems = channel.item || [];
+    const items = rawItems.slice(0, 50).map((item: any) => ({
+      title: getText(item.title),
+      description: getText(item.description) || getText(item["itunes:summary"]),
+      audioUrl: item.enclosure?.["@_url"] || "",
+      duration: getText(item["itunes:duration"]),
+      publishedAt: item.pubDate ? new Date(getText(item.pubDate)).toISOString() : null,
+      episodeNumber: parseInt(getText(item["itunes:episode"])) || null,
+      seasonNumber: parseInt(getText(item["itunes:season"])) || null,
+      episodeType: getText(item["itunes:episodeType"]) || "full",
+      imageUrl: item["itunes:image"]?.["@_href"] || null,
+      explicit: getText(item["itunes:explicit"]) === "yes" || getText(item["itunes:explicit"]) === "true",
+      link: getText(item.link) || null,
+    }));
 
     return new Response(JSON.stringify({ podcast: podcastInfo, episodes: items, feedUrl: resolvedFeedUrl }), {
       status: 200,
