@@ -1,0 +1,553 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import Marxism101Viewer from "../../components/Marxism101Viewer";
+---
+
+<Layout title="Marxism 101 - MLCompanion">
+  <main class="page m101-page">
+    <Breadcrumb items={[
+      { label: "Home", href: "/" },
+      { label: "Learn" },
+      { label: "Marxism 101" }
+    ]} />
+
+    <Marxism101Viewer client:load />
+  </main>
+</Layout>
+
+<style is:global>
+  .m101-page {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 80px);
+    padding-bottom: 0;
+  }
+
+  .m101-viewer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Progress Bar */
+  .m101-progress-bar {
+    position: sticky;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--border-color);
+    z-index: 10;
+  }
+
+  .m101-progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    transition: width 0.4s ease-out;
+  }
+
+  /* Slide Container */
+  .m101-slide-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    min-height: 400px;
+  }
+
+  /* Base Slide Styles */
+  .m101-slide {
+    width: 100%;
+    max-width: 900px;
+    animation: m101-fade-in 0.35s ease;
+  }
+
+  @keyframes m101-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Title Slide */
+  .m101-slide-title {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .m101-title-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+  }
+
+  .m101-title-main {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-family: "Crimson Pro", Georgia, serif;
+    font-weight: 700;
+    color: var(--ink-color);
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  .m101-title-sub {
+    font-size: clamp(1rem, 2.5vw, 1.35rem);
+    color: var(--muted-color);
+    max-width: 600px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .m101-title-content {
+    font-size: 1rem;
+    color: var(--muted-color);
+    max-width: 500px;
+    margin: 0;
+  }
+
+  /* Content Slides */
+  .m101-content-title {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-family: "Crimson Pro", Georgia, serif;
+    font-weight: 700;
+    color: var(--accent-color);
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .m101-content-text {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--ink-color);
+    margin: 0 0 20px;
+  }
+
+  .m101-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .m101-bullets li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--ink-color);
+  }
+
+  .m101-bullet-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    flex-shrink: 0;
+    margin-top: 8px;
+  }
+
+  /* Split Slide */
+  .m101-slide-split {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  @media (min-width: 768px) {
+    .m101-slide-split {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .m101-split-text {
+      flex: 1;
+    }
+
+    .m101-split-image {
+      flex: 0 0 280px;
+    }
+  }
+
+  .m101-split-image {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(67, 44, 23, 0.12);
+    border: 3px solid var(--paper-color);
+  }
+
+  .m101-split-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Quote Slide */
+  .m101-slide-quote {
+    background: var(--ink-color);
+    color: var(--paper-color);
+    padding: 48px 40px;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .m101-quote-mark {
+    position: absolute;
+    top: 16px;
+    left: 24px;
+    color: var(--paper-color);
+  }
+
+  .m101-quote-text {
+    font-size: clamp(1.3rem, 3.5vw, 2rem);
+    font-family: "Crimson Pro", Georgia, serif;
+    font-weight: 700;
+    font-style: italic;
+    line-height: 1.4;
+    margin: 0 0 28px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .m101-quote-attribution {
+    border-top: 1px solid rgba(251, 247, 241, 0.2);
+    padding-top: 20px;
+    text-align: right;
+  }
+
+  .m101-quote-author {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-style: normal;
+    color: var(--accent-color);
+  }
+
+  .m101-quote-source {
+    display: block;
+    font-size: 0.95rem;
+    color: rgba(251, 247, 241, 0.6);
+    margin-top: 4px;
+  }
+
+  /* Concept Card Slide */
+  .m101-slide-concept {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .m101-concept-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted-color);
+    font-weight: 600;
+  }
+
+  .m101-concept-card {
+    background: var(--paper-color);
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(67, 44, 23, 0.1);
+    border-top: 6px solid var(--accent-color);
+    width: 100%;
+  }
+
+  .m101-concept-term {
+    font-size: 1.75rem;
+    font-family: "Crimson Pro", Georgia, serif;
+    font-weight: 700;
+    color: var(--ink-color);
+    margin: 0 0 20px;
+  }
+
+  .m101-concept-section {
+    margin-bottom: 20px;
+  }
+
+  .m101-concept-section-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent-color);
+    margin: 0 0 8px;
+    font-weight: 700;
+  }
+
+  .m101-concept-section p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink-color);
+    margin: 0;
+  }
+
+  .m101-concept-analogy {
+    background: rgba(156, 92, 46, 0.06);
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(156, 92, 46, 0.15);
+  }
+
+  .m101-concept-analogy-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted-color);
+    margin-bottom: 10px;
+  }
+
+  .m101-concept-analogy-header h4 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .m101-concept-analogy p {
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--ink-color);
+    margin: 0;
+  }
+
+  /* Quiz Slide */
+  .m101-slide-quiz {
+    max-width: 700px;
+  }
+
+  .m101-quiz-card {
+    background: var(--paper-color);
+    padding: 28px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(67, 44, 23, 0.08);
+    border: 1px solid var(--border-color);
+  }
+
+  .m101-quiz-question {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--ink-color);
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+
+  .m101-quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .m101-quiz-option {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 2px solid var(--border-color);
+    background: transparent;
+    text-align: left;
+    font-size: 1rem;
+    color: var(--ink-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: inherit;
+  }
+
+  .m101-quiz-option:hover:not(:disabled) {
+    border-color: var(--accent-color);
+    background: rgba(156, 92, 46, 0.04);
+  }
+
+  .m101-quiz-option:disabled {
+    cursor: default;
+  }
+
+  .m101-quiz-option.correct {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.08);
+    color: #166534;
+  }
+
+  .m101-quiz-option.incorrect {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    color: #991b1b;
+  }
+
+  .m101-quiz-option.faded {
+    opacity: 0.5;
+  }
+
+  .m101-quiz-icon {
+    flex-shrink: 0;
+  }
+
+  .m101-quiz-option.correct .m101-quiz-icon {
+    color: #22c55e;
+  }
+
+  .m101-quiz-option.incorrect .m101-quiz-icon {
+    color: #ef4444;
+  }
+
+  .m101-quiz-feedback {
+    margin-top: 18px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    animation: m101-fade-in 0.25s ease;
+  }
+
+  .m101-quiz-feedback.correct {
+    background: rgba(34, 197, 94, 0.1);
+    color: #166534;
+  }
+
+  .m101-quiz-feedback.incorrect {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+  }
+
+  .m101-quiz-feedback p {
+    margin: 0;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  /* Controls */
+  .m101-controls {
+    position: sticky;
+    bottom: 0;
+    background: rgba(251, 247, 241, 0.95);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-color);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .m101-counter {
+    font-size: 0.95rem;
+    color: var(--muted-color);
+    font-weight: 500;
+  }
+
+  .m101-counter-current {
+    color: var(--accent-color);
+    font-weight: 700;
+  }
+
+  .m101-nav-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  .m101-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--ink-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .m101-nav-btn:hover:not(:disabled) {
+    border-color: var(--accent-color);
+    background: rgba(156, 92, 46, 0.06);
+  }
+
+  .m101-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .m101-nav-next {
+    background: var(--ink-color);
+    color: var(--paper-color);
+    border-color: var(--ink-color);
+  }
+
+  .m101-nav-next:hover:not(:disabled) {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+  }
+
+  .m101-nav-prev span,
+  .m101-nav-next span {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .m101-nav-prev span,
+    .m101-nav-next span {
+      display: inline;
+    }
+  }
+
+  .m101-keyboard-hint {
+    display: none;
+    font-size: 0.8rem;
+    color: var(--muted-color);
+  }
+
+  @media (min-width: 768px) {
+    .m101-keyboard-hint {
+      display: block;
+    }
+  }
+
+  .m101-keyboard-hint kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    background: var(--paper-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .m101-slide,
+    .m101-quiz-feedback {
+      animation: none;
+    }
+
+    .m101-progress-fill {
+      transition: none;
+    }
+  }
+</style>
