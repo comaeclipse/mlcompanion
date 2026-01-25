@@ -291,6 +291,7 @@ function parseArgs() {
     difficulty: null,
     traditions: [],
     userId: null,
+    force: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -375,6 +376,10 @@ function parseArgs() {
         parsed.userId = nextArg;
         i++;
         break;
+      case "--force":
+      case "-f":
+        parsed.force = true;
+        break;
       case "--help":
       case "-h":
         console.log(`
@@ -399,6 +404,7 @@ Options:
   --difficulty <difficulty>     beginner, intermediate, or advanced
   --traditions <traditions>     Comma-separated: classical_marxism, leninism, trotskyism, maoism, western_marxism, marxism_leninism, other
   --userId, -u <userId>         User ID to assign book to (defaults to first user)
+  --force, -f                   Skip duplicate check and add anyway
   --help, -h                    Show this help message
 
 Examples:
@@ -480,6 +486,87 @@ async function main() {
     }
     userId = firstUser.id;
     console.log(`Using user: ${firstUser.email} (${firstUser.id})`);
+  }
+
+  // Check for duplicates (unless --force flag is used)
+  if (!args.force) {
+    console.log("\n🔍 Checking for duplicates...");
+
+    // Check by ISBN first (most reliable)
+    if (bookData.isbn || bookData.isbn13) {
+      const existingByIsbn = await prisma.book.findFirst({
+        where: {
+          OR: [
+            bookData.isbn ? { isbn: bookData.isbn } : {},
+            bookData.isbn13 ? { isbn13: bookData.isbn13 } : {},
+          ],
+        },
+        select: {
+          id: true,
+          title: true,
+          authors: true,
+          isbn: true,
+          isbn13: true,
+          isPublished: true,
+          createdAt: true,
+        },
+      });
+
+      if (existingByIsbn) {
+        console.log("\n⚠️  DUPLICATE FOUND (by ISBN):");
+        console.log("  ID:", existingByIsbn.id);
+        console.log("  Title:", existingByIsbn.title);
+        console.log("  Authors:", existingByIsbn.authors.join(", "));
+        console.log("  ISBN-10:", existingByIsbn.isbn || "(none)");
+        console.log("  ISBN-13:", existingByIsbn.isbn13 || "(none)");
+        console.log("  Published:", existingByIsbn.isPublished ? "Yes" : "No");
+        console.log("  Created:", existingByIsbn.createdAt.toISOString());
+        console.log("  View at: /books/" + existingByIsbn.id);
+        console.log("\n❌ Book already exists. Use --force to add anyway.\n");
+        await prisma.$disconnect();
+        await pool.end();
+        process.exit(1);
+      }
+    }
+
+    // Check by title (case-insensitive)
+    const existingByTitle = await prisma.book.findFirst({
+      where: {
+        title: {
+          equals: bookData.title,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        authors: true,
+        isbn: true,
+        isbn13: true,
+        isPublished: true,
+        createdAt: true,
+      },
+    });
+
+    if (existingByTitle) {
+      console.log("\n⚠️  DUPLICATE FOUND (by title):");
+      console.log("  ID:", existingByTitle.id);
+      console.log("  Title:", existingByTitle.title);
+      console.log("  Authors:", existingByTitle.authors.join(", "));
+      console.log("  ISBN-10:", existingByTitle.isbn || "(none)");
+      console.log("  ISBN-13:", existingByTitle.isbn13 || "(none)");
+      console.log("  Published:", existingByTitle.isPublished ? "Yes" : "No");
+      console.log("  Created:", existingByTitle.createdAt.toISOString());
+      console.log("  View at: /books/" + existingByTitle.id);
+      console.log("\n❌ Book already exists. Use --force to add anyway.\n");
+      await prisma.$disconnect();
+      await pool.end();
+      process.exit(1);
+    }
+
+    console.log("✅ No duplicates found.\n");
+  } else {
+    console.log("\n⚠️  Skipping duplicate check (--force flag used)\n");
   }
 
   // Display book data
