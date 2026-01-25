@@ -71,7 +71,13 @@
       "Bash(grep:*)",
       "Bash(set -a)",
       "Bash(source .env.vercel)",
-      "Bash(set +a)"
+      "Bash(set +a)",
+      "WebFetch(domain:developer.spotify.com)",
+      "mcp__plugin_github_github__list_commits",
+      "Bash(git rev-parse:*)",
+      "mcp__plugin_github_github__search_code",
+      "Bash(gh api:*)",
+      "mcp__plugin_github_github__get_file_contents"
     ]
   }
 }
