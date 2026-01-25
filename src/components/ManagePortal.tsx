@@ -151,6 +151,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const [editingPodcast, setEditingPodcast] = useState<Podcast | null>(null);
   const [editingEpisode, setEditingEpisode] = useState<Episode | null>(null);
+  const [selectedAuthor, setSelectedAuthor] = useState<string>("");
 
   const fetchBooks = async () => {
     setBooksLoading(true);
@@ -308,6 +309,7 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
     setEditingChannel(null);
     setEditingPodcast(null);
     setEditingEpisode(null);
+    setSelectedAuthor("");
   };
 
   const handleAddClick = () => {
@@ -525,9 +527,22 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
       );
     }
 
+    // Filter books by selected author
+    const filteredBooks = selectedAuthor
+      ? books.filter((book) => book.authors.includes(selectedAuthor))
+      : books;
+
+    if (filteredBooks.length === 0) {
+      return (
+        <div className="panel" style={{ textAlign: "center", padding: "3rem" }}>
+          <p className="muted">No books found for selected author.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="video-admin-list">
-        {books.map((book) => {
+        {filteredBooks.map((book) => {
           // Use direct URL for all images (Vercel proxy has issues with external URLs)
           const proxiedThumbnailUrl = book.thumbnailUrl;
 
@@ -1173,6 +1188,49 @@ export function ManagePortal({ initialTab, initialBooks, initialVideos, initialA
           </button>
         </div>
       </header>
+
+      {/* Author filter for books tab */}
+      {activeTab === "books" && books && books.length > 0 && (() => {
+        // Get unique authors from all books
+        const allAuthors = new Set<string>();
+        books.forEach((book) => {
+          book.authors.forEach((author) => allAuthors.add(author));
+        });
+        const uniqueAuthors = Array.from(allAuthors).sort();
+
+        return (
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label htmlFor="author-filter" style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.9rem", fontWeight: 500 }}>
+              Filter by Author
+            </label>
+            <select
+              id="author-filter"
+              value={selectedAuthor}
+              onChange={(e) => setSelectedAuthor(e.target.value)}
+              style={{
+                padding: "0.5rem 0.75rem",
+                fontSize: "0.9rem",
+                borderRadius: "8px",
+                border: "1px solid var(--border-color)",
+                background: "var(--background-color)",
+                color: "var(--text-color)",
+                cursor: "pointer",
+                minWidth: "200px",
+              }}
+            >
+              <option value="">All Authors ({books.length} books)</option>
+              {uniqueAuthors.map((author) => {
+                const count = books.filter((b) => b.authors.includes(author)).length;
+                return (
+                  <option key={author} value={author}>
+                    {author} ({count} {count === 1 ? "book" : "books"})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        );
+      })()}
 
       <section>
         {activeTab === "books" ? renderBooks() : activeTab === "videos" ? renderVideos() : activeTab === "channels" ? renderChannels() : activeTab === "podcasts" ? renderPodcasts() : renderAuthors()}
