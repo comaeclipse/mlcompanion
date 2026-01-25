@@ -9,6 +9,7 @@
     "astro": "astro",
     "create-admin": "tsx scripts/create-admin.ts",
     "migrate-authors": "tsx scripts/migrate-authors.ts",
+    "add-book": "tsx scripts/add-book.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
