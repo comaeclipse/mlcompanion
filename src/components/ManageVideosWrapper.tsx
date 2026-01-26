@@ -19,11 +19,20 @@ interface ManageVideosWrapperProps {
   video: Video | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ManageVideosWrapper({ video, isOpen, onClose }: ManageVideosWrapperProps) {
+export function ManageVideosWrapper({ video, isOpen, onClose, onSuccess }: ManageVideosWrapperProps) {
 
   if (!isOpen) return null;
+
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div
@@ -56,10 +65,11 @@ export function ManageVideosWrapper({ video, isOpen, onClose }: ManageVideosWrap
         <h2 style={{ marginTop: 0 }}>{video ? "Edit Video" : "Add Video"}</h2>
         <VideoForm
           video={video || undefined}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleSuccess}
           onCancel={onClose}
         />
       </div>
     </div>
   );
 }
+

@@ -77,7 +77,11 @@
       "Bash(git rev-parse:*)",
       "mcp__plugin_github_github__search_code",
       "Bash(gh api:*)",
-      "mcp__plugin_github_github__get_file_contents"
+      "mcp__plugin_github_github__get_file_contents",
+      "Bash(npm run add-book:*)",
+      "Bash(psql:*)",
+      "Bash(npm run delete-book:*)",
+      "Bash(npm run search-books:*)"
     ]
   }
 }

@@ -12,10 +12,19 @@ interface ManageAuthorsWrapperProps {
   author: Author | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ManageAuthorsWrapper({ author, isOpen, onClose }: ManageAuthorsWrapperProps) {
+export function ManageAuthorsWrapper({ author, isOpen, onClose, onSuccess }: ManageAuthorsWrapperProps) {
   if (!isOpen) return null;
+
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div
@@ -48,10 +57,11 @@ export function ManageAuthorsWrapper({ author, isOpen, onClose }: ManageAuthorsW
         <h2 style={{ marginTop: 0 }}>{author ? "Edit Author" : "Add Author"}</h2>
         <AuthorForm
           author={author || undefined}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleSuccess}
           onCancel={onClose}
         />
       </div>
     </div>
   );
 }
+

@@ -31,11 +31,20 @@ interface ManageBooksWrapperProps {
   book: Book | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ManageBooksWrapper({ book, isOpen, onClose }: ManageBooksWrapperProps) {
+export function ManageBooksWrapper({ book, isOpen, onClose, onSuccess }: ManageBooksWrapperProps) {
 
   if (!isOpen) return null;
+
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div
@@ -68,10 +77,11 @@ export function ManageBooksWrapper({ book, isOpen, onClose }: ManageBooksWrapper
         <h2 style={{ marginTop: 0 }}>{book ? "Edit Book" : "Add Book"}</h2>
         <BookForm
           book={book || undefined}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleSuccess}
           onCancel={onClose}
         />
       </div>
     </div>
   );
 }
+

@@ -10,6 +10,8 @@
     "create-admin": "tsx scripts/create-admin.ts",
     "migrate-authors": "tsx scripts/migrate-authors.ts",
     "add-book": "tsx scripts/add-book.ts",
+    "delete-book": "tsx scripts/delete-book.ts",
+    "search-books": "tsx scripts/search-books.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

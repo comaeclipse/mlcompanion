@@ -18,10 +18,19 @@ interface ManagePodcastsWrapperProps {
   podcast: Podcast | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ManagePodcastsWrapper({ podcast, isOpen, onClose }: ManagePodcastsWrapperProps) {
+export function ManagePodcastsWrapper({ podcast, isOpen, onClose, onSuccess }: ManagePodcastsWrapperProps) {
   if (!isOpen) return null;
+
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div
@@ -54,10 +63,11 @@ export function ManagePodcastsWrapper({ podcast, isOpen, onClose }: ManagePodcas
         <h2 style={{ marginTop: 0 }}>{podcast?.id ? "Edit Podcast" : "Add Podcast"}</h2>
         <PodcastForm
           podcast={podcast || undefined}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleSuccess}
           onCancel={onClose}
         />
       </div>
     </div>
   );
 }
+

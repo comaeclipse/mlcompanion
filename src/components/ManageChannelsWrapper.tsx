@@ -20,10 +20,19 @@ interface ManageChannelsWrapperProps {
   channel: Channel | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ManageChannelsWrapper({ channel, isOpen, onClose }: ManageChannelsWrapperProps) {
+export function ManageChannelsWrapper({ channel, isOpen, onClose, onSuccess }: ManageChannelsWrapperProps) {
   if (!isOpen) return null;
+
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div
@@ -56,10 +65,11 @@ export function ManageChannelsWrapper({ channel, isOpen, onClose }: ManageChanne
         <h2 style={{ marginTop: 0 }}>{channel ? "Edit Channel" : "Add Channel"}</h2>
         <ChannelForm
           channel={channel || undefined}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleSuccess}
           onCancel={onClose}
         />
       </div>
     </div>
   );
 }
+

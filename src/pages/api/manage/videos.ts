@@ -6,16 +6,40 @@ export const GET: APIRoute = async (context) => {
   const authResult = await requireAuth(context);
   if (authResult instanceof Response) return authResult;
 
-  const videos = await prisma.video.findMany({
-    where: {
-      createdBy: authResult.user.id,
-      isPublished: true,
-    },
-    orderBy: [{ order: "asc" }, { createdAt: "desc" }],
-  });
+  const url = new URL(context.request.url);
+  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
+  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") || "20", 10)));
+  const skip = (page - 1) * limit;
 
-  return new Response(JSON.stringify(videos), {
+  const [videos, total] = await Promise.all([
+    prisma.video.findMany({
+      where: {
+        createdBy: authResult.user.id,
+        isPublished: true,
+      },
+      orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+      skip,
+      take: limit,
+    }),
+    prisma.video.count({
+      where: {
+        createdBy: authResult.user.id,
+        isPublished: true,
+      },
+    }),
+  ]);
+
+  return new Response(JSON.stringify({
+    videos,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
 };
+

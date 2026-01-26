@@ -27,10 +27,19 @@ interface ManageEpisodesWrapperProps {
   podcasts: Podcast[];
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function ManageEpisodesWrapper({ episode, podcasts, isOpen, onClose }: ManageEpisodesWrapperProps) {
+export function ManageEpisodesWrapper({ episode, podcasts, isOpen, onClose, onSuccess }: ManageEpisodesWrapperProps) {
   if (!isOpen) return null;
+
+  const handleSuccess = () => {
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.reload();
+    }
+  };
 
   return (
     <div
@@ -64,10 +73,11 @@ export function ManageEpisodesWrapper({ episode, podcasts, isOpen, onClose }: Ma
         <EpisodeForm
           episode={episode || undefined}
           podcasts={podcasts}
-          onSuccess={() => window.location.reload()}
+          onSuccess={handleSuccess}
           onCancel={onClose}
         />
       </div>
     </div>
   );
 }
+
