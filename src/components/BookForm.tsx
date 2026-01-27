@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { getProxiedImageUrl } from "@/lib/image-utils";
+import { BookEpisodeLinks } from "./BookEpisodeLinks";
 import {
   SOURCE_TYPE_LABELS,
   FUNCTION_LABELS,
@@ -878,6 +879,11 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         <p style={{ fontSize: "0.75rem", color: "var(--muted-color)", marginTop: "0.5rem" }}>
           Add Amazon link and up to 2 custom purchase options
         </p>
+      </div>
+
+      {/* Companion Media Section */}
+      <div style={{ background: "rgba(156, 39, 176, 0.08)", padding: "1rem", borderRadius: "8px" }}>
+        <BookEpisodeLinks bookId={book?.id} />
       </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
