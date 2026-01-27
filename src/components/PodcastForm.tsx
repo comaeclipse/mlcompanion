@@ -214,7 +214,7 @@ export function PodcastForm({ podcast, onSuccess, onCancel }: PodcastFormProps) 
       });
 
       if (response.ok) {
-        window.location.reload();
+        onSuccess();
         return;
       } else {
         const data = await response.json().catch(() => ({}));

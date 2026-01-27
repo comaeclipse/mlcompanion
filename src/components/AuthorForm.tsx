@@ -100,7 +100,7 @@ export function AuthorForm({ author, onSuccess, onCancel }: AuthorFormProps) {
       });
 
       if (response.ok) {
-        window.location.reload();
+        onSuccess();
       } else {
         const data = await response.json();
         setError(data.error || "Failed to save author");

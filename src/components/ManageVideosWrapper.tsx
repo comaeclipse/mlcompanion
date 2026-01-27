@@ -27,11 +27,7 @@ export function ManageVideosWrapper({ video, isOpen, onClose, onSuccess }: Manag
   if (!isOpen) return null;
 
   const handleSuccess = () => {
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      window.location.reload();
-    }
+    onSuccess?.();
   };
 
   return (

@@ -35,9 +35,7 @@ export function ManageEpisodesWrapper({ episode, podcasts, isOpen, onClose, onSu
 
   const handleSuccess = () => {
     if (onSuccess) {
-      onSuccess();
-    } else {
-      window.location.reload();
+      onSuccess?.();
     }
   };
 

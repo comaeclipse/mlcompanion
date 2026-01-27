@@ -106,21 +106,11 @@ export function ManagePortal({ initialTab }: ManagePortalProps) {
 
       <section>
         <Suspense fallback={<TabLoadingFallback />}>
-          <div style={{ display: activeTab === "books" ? "block" : "none" }}>
-            <BooksTab />
-          </div>
-          <div style={{ display: activeTab === "videos" ? "block" : "none" }}>
-            <VideosTab />
-          </div>
-          <div style={{ display: activeTab === "authors" ? "block" : "none" }}>
-            <AuthorsTab />
-          </div>
-          <div style={{ display: activeTab === "channels" ? "block" : "none" }}>
-            <ChannelsTab />
-          </div>
-          <div style={{ display: activeTab === "podcasts" ? "block" : "none" }}>
-            <PodcastsTab />
-          </div>
+          {activeTab === "books" && <BooksTab />}
+          {activeTab === "videos" && <VideosTab />}
+          {activeTab === "authors" && <AuthorsTab />}
+          {activeTab === "channels" && <ChannelsTab />}
+          {activeTab === "podcasts" && <PodcastsTab />}
         </Suspense>
       </section>
     </div>

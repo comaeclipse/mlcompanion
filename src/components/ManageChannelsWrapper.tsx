@@ -27,11 +27,7 @@ export function ManageChannelsWrapper({ channel, isOpen, onClose, onSuccess }: M
   if (!isOpen) return null;
 
   const handleSuccess = () => {
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      window.location.reload();
-    }
+    onSuccess?.();
   };
 
   return (

@@ -19,11 +19,7 @@ export function ManageAuthorsWrapper({ author, isOpen, onClose, onSuccess }: Man
   if (!isOpen) return null;
 
   const handleSuccess = () => {
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      window.location.reload();
-    }
+    onSuccess?.();
   };
 
   return (

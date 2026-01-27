@@ -214,8 +214,8 @@ export function VideoForm({ video, onSuccess, onCancel }: VideoFormProps) {
       });
 
       if (response.ok) {
-        // Reload page directly instead of relying on callback
-        window.location.reload();
+        // Call success callback to refresh data
+        onSuccess();
         return;
       } else {
         const data = await response.json().catch(() => ({}));

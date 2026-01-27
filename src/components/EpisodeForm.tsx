@@ -94,7 +94,7 @@ export function EpisodeForm({ episode, podcasts, onSuccess, onCancel }: EpisodeF
       });
 
       if (response.ok) {
-        window.location.reload();
+        onSuccess();
         return;
       } else {
         const data = await response.json().catch(() => ({}));

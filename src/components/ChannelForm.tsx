@@ -133,7 +133,7 @@ export function ChannelForm({ channel, onSuccess, onCancel }: ChannelFormProps) 
       });
 
       if (response.ok) {
-        window.location.reload();
+        onSuccess();
         return;
       } else {
         const data = await response.json().catch(() => ({}));

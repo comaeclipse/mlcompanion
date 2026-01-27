@@ -271,7 +271,7 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
       });
 
       if (response.ok) {
-        window.location.reload();
+        onSuccess();
         return;
       } else {
         const data = await response.json().catch(() => ({}));

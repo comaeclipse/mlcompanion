@@ -39,11 +39,7 @@ export function ManageBooksWrapper({ book, isOpen, onClose, onSuccess }: ManageB
   if (!isOpen) return null;
 
   const handleSuccess = () => {
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      window.location.reload();
-    }
+    onSuccess?.();
   };
 
   return (
