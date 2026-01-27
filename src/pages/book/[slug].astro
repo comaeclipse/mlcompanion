@@ -11,6 +11,7 @@ import {
   TRADITION_LABELS,
   getFacetColor,
 } from "../../lib/book-facets";
+import { parseEpisodeUrl } from "../../lib/episode-utils";
 
 const { slug } = Astro.params;
 
@@ -20,12 +21,60 @@ const idMatch = slugValue.match(/-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const bookById = idMatch
   ? await prisma.book.findUnique({
       where: { id: idMatch[1] },
+      include: {
+        linkedEpisodes: {
+          include: {
+            episode: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                externalUrl: true,
+                thumbnailUrl: true,
+                duration: true,
+                publishedAt: true,
+                podcast: {
+                  select: {
+                    name: true,
+                    slug: true,
+                    thumbnailUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     })
   : null;
 
 const bookFromSlug = await prisma.book.findMany({
   where: { isPublished: true },
   orderBy: [{ order: "asc" }, { createdAt: "desc" }],
+  include: {
+    linkedEpisodes: {
+      include: {
+        episode: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            externalUrl: true,
+            thumbnailUrl: true,
+            duration: true,
+            publishedAt: true,
+            podcast: {
+              select: {
+                name: true,
+                slug: true,
+                thumbnailUrl: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 });
 
 const book = bookById || bookFromSlug.find((item) => slugifyTitle(item.title) === slugValue) || null;
@@ -339,6 +388,111 @@ const stripInlineStyles = (html: string) => {
               )}
             </div>
           ))}
+        </div>
+      </section>
+    )}
+
+    {book.linkedEpisodes && book.linkedEpisodes.length > 0 && (
+      <section class="panel" style="margin-top: 1.5rem;">
+        <h2>Companion Media</h2>
+        <p class="muted" style="margin: 0.5rem 0 1rem; font-size: 0.9rem;">
+          Podcast episodes that reference or discuss this book:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          {book.linkedEpisodes.map((le) => {
+            const episode = le.episode;
+            const embedInfo = episode.externalUrl ? parseEpisodeUrl(episode.externalUrl) : null;
+            
+            return (
+              <div style="background: #fbf7f1; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem;">
+                <div style="display: flex; align-items: start; gap: 1rem; margin-bottom: 1rem;">
+                  {episode.podcast.thumbnailUrl && (
+                    <img 
+                      src={episode.podcast.thumbnailUrl} 
+                      alt={episode.podcast.name}
+                      style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; flex-shrink: 0;"
+                    />
+                  )}
+                  <div style="flex: 1; min-width: 0;">
+                    <h3 style="margin: 0 0 0.25rem; font-size: 1.05rem; font-weight: 600;">
+                      <a 
+                        href={`/episode/${episode.id}`}
+                        style="color: var(--ink-color); text-decoration: none;"
+                      >
+                        {episode.title}
+                      </a>
+                    </h3>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--muted-color);">
+                      <a 
+                        href={`/podcasts/show/${episode.podcast.slug}`}
+                        style="color: var(--accent-color); text-decoration: none;"
+                      >
+                        {episode.podcast.name}
+                      </a>
+                      {episode.duration && <span> • {episode.duration}</span>}
+                      {episode.publishedAt && (
+                        <span> • {new Date(episode.publishedAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {episode.description && (
+                  <p style="margin: 0 0 1rem; color: var(--muted-color); font-size: 0.9rem; line-height: 1.6;">
+                    {episode.description.length > 200 
+                      ? episode.description.substring(0, 200) + "..." 
+                      : episode.description}
+                  </p>
+                )}
+
+                {embedInfo && (
+                  <div style="margin-top: 1rem;">
+                    {embedInfo.type === "spotify" && (
+                      <iframe
+                        src={embedInfo.embedUrl}
+                        width="100%"
+                        height="232"
+                        frameborder="0"
+                        allowfullscreen=""
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                        loading="lazy"
+                        style="border-radius: 12px;"
+                      ></iframe>
+                    )}
+                    {embedInfo.type === "apple" && (
+                      <iframe
+                        src={embedInfo.embedUrl}
+                        width="100%"
+                        height="175"
+                        frameborder="0"
+                        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation-by-user-activation"
+                        allow="autoplay *; encrypted-media *; clipboard-write"
+                        style="border-radius: 12px; border: none; overflow: hidden; background: transparent;"
+                      ></iframe>
+                    )}
+                  </div>
+                )}
+
+                {episode.externalUrl && (
+                  <div style="margin-top: 1rem;">
+                    <a
+                      href={episode.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="button"
+                      style="display: inline-block; font-size: 0.85rem; padding: 0.5rem 1rem;"
+                    >
+                      Listen on {embedInfo?.type === "spotify" ? "Spotify" : embedInfo?.type === "apple" ? "Apple Podcasts" : "Platform"}
+                    </a>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     )}

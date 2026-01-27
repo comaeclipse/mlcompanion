@@ -81,7 +81,11 @@
       "Bash(npm run add-book:*)",
       "Bash(psql:*)",
       "Bash(npm run delete-book:*)",
-      "Bash(npm run search-books:*)"
+      "Bash(npm run search-books:*)",
+      "Bash(pkill -f \"git push\")",
+      "Bash(git remote:*)",
+      "Bash(GIT_TRACE=1 GIT_CURL_VERBOSE=1 timeout 15 git push:*)",
+      "mcp__plugin_github_github__get_commit"
     ]
   }
 }

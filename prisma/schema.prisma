@@ -211,6 +211,7 @@ model Book {
 
   authorRelations BookAuthor[]
   linkedVideos    VideoBook[]
+  linkedEpisodes  BookEpisode[]
 
   @@index([createdBy])
   @@index([isPublished])
@@ -270,6 +271,21 @@ model VideoBook {
   @@index([bookId])
 }
 
+model BookEpisode {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  bookId    String
+  episodeId String
+
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  episode   Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, episodeId])
+  @@index([bookId])
+  @@index([episodeId])
+}
+
 model Podcast {
   id            String   @id @default(uuid())
   createdAt     DateTime @default(now())
@@ -327,6 +343,8 @@ model Episode {
 
   createdBy     String
   creator       User     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  linkedBooks   BookEpisode[]
 
   @@index([createdBy])
   @@index([isPublished])

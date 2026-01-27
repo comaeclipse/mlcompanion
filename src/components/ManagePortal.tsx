@@ -35,23 +35,6 @@ export function ManagePortal({ initialTab }: ManagePortalProps) {
     setActiveTab(tab);
   };
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case "books":
-        return <BooksTab />;
-      case "videos":
-        return <VideosTab />;
-      case "authors":
-        return <AuthorsTab />;
-      case "channels":
-        return <ChannelsTab />;
-      case "podcasts":
-        return <PodcastsTab />;
-      default:
-        return <VideosTab />;
-    }
-  };
-
   return (
     <div className="page">
       <header className="hero">
@@ -123,7 +106,21 @@ export function ManagePortal({ initialTab }: ManagePortalProps) {
 
       <section>
         <Suspense fallback={<TabLoadingFallback />}>
-          {renderActiveTab()}
+          <div style={{ display: activeTab === "books" ? "block" : "none" }}>
+            <BooksTab />
+          </div>
+          <div style={{ display: activeTab === "videos" ? "block" : "none" }}>
+            <VideosTab />
+          </div>
+          <div style={{ display: activeTab === "authors" ? "block" : "none" }}>
+            <AuthorsTab />
+          </div>
+          <div style={{ display: activeTab === "channels" ? "block" : "none" }}>
+            <ChannelsTab />
+          </div>
+          <div style={{ display: activeTab === "podcasts" ? "block" : "none" }}>
+            <PodcastsTab />
+          </div>
         </Suspense>
       </section>
     </div>
