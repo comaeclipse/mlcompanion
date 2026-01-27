@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { parseMediaUrl, isValidMediaUrl, getMediaEmbedHeight, type ParsedMediaUrl } from "@/lib/media-utils";
 
 interface Episode {
   id: string;
@@ -25,14 +26,20 @@ interface LinkedEpisode {
 
 interface BookEpisodeLinksProps {
   bookId?: string;
+  companionMediaUrls?: string[];
 }
 
-export function BookEpisodeLinks({ bookId }: BookEpisodeLinksProps) {
+export function BookEpisodeLinks({ bookId, companionMediaUrls = [] }: BookEpisodeLinksProps) {
   const [linkedEpisodes, setLinkedEpisodes] = useState<LinkedEpisode[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  
+  // Media embed states
+  const [mediaUrls, setMediaUrls] = useState<string[]>(companionMediaUrls);
+  const [newMediaUrl, setNewMediaUrl] = useState("");
+  const [mediaError, setMediaError] = useState("");
 
   // Fetch linked episodes when bookId changes
   useEffect(() => {
@@ -40,6 +47,11 @@ export function BookEpisodeLinks({ bookId }: BookEpisodeLinksProps) {
       fetchLinkedEpisodes();
     }
   }, [bookId]);
+
+  // Update media URLs when prop changes
+  useEffect(() => {
+    setMediaUrls(companionMediaUrls);
+  }, [companionMediaUrls]);
 
   const fetchLinkedEpisodes = async () => {
     if (!bookId) return;
@@ -143,6 +155,45 @@ export function BookEpisodeLinks({ bookId }: BookEpisodeLinksProps) {
     }
   };
 
+  const handleAddMediaUrl = () => {
+    const url = newMediaUrl.trim();
+    
+    if (!url) {
+      setMediaError("Please enter a URL");
+      return;
+    }
+
+    if (!isValidMediaUrl(url)) {
+      setMediaError("Please enter a valid Apple Music or Spotify URL");
+      return;
+    }
+
+    if (mediaUrls.includes(url)) {
+      setMediaError("This URL is already added");
+      return;
+    }
+
+    const updatedUrls = [...mediaUrls, url];
+    setMediaUrls(updatedUrls);
+    setNewMediaUrl("");
+    setMediaError("");
+
+    // Notify parent component to save
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("media-urls-changed", { detail: updatedUrls }));
+    }
+  };
+
+  const handleRemoveMediaUrl = (urlToRemove: string) => {
+    const updatedUrls = mediaUrls.filter(url => url !== urlToRemove);
+    setMediaUrls(updatedUrls);
+
+    // Notify parent component to save
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("media-urls-changed", { detail: updatedUrls }));
+    }
+  };
+
   if (!bookId) {
     return (
       <div
@@ -167,10 +218,111 @@ export function BookEpisodeLinks({ bookId }: BookEpisodeLinksProps) {
       </h3>
       <p
         className="muted"
-        style={{ margin: "0 0 1rem", fontSize: "0.85rem", lineHeight: 1.5 }}
+        style={{ margin: "0 0 1.5rem", fontSize: "0.85rem", lineHeight: 1.5 }}
       >
-        Link podcast episodes that reference or discuss this book.
+        Embed Apple Music or Spotify content, or link podcast episodes from your library.
       </p>
+
+      {/* Media Embeds Section */}
+      <div style={{ marginBottom: "2rem", padding: "1rem", background: "rgba(102, 126, 234, 0.05)", borderRadius: "8px", border: "1px solid rgba(102, 126, 234, 0.2)" }}>
+        <h4 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "0.95rem", fontWeight: 600 }}>
+          🎵 Apple Music / Spotify Embeds
+        </h4>
+        
+        {/* Add Media URL Input */}
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+          <Input
+            type="url"
+            placeholder="Paste Apple Music or Spotify URL..."
+            value={newMediaUrl}
+            onChange={(e) => {
+              setNewMediaUrl(e.target.value);
+              setMediaError("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddMediaUrl();
+              }
+            }}
+            style={{ flex: 1 }}
+          />
+          <Button type="button" onClick={handleAddMediaUrl}>
+            Add Embed
+          </Button>
+        </div>
+        
+        {mediaError && (
+          <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "#d32f2f" }}>
+            {mediaError}
+          </p>
+        )}
+
+        <p className="muted" style={{ margin: "0 0 1rem", fontSize: "0.75rem", lineHeight: 1.4 }}>
+          Supported formats: Apple Music albums/playlists, Spotify albums/playlists/tracks/podcasts
+        </p>
+
+        {/* Display Media Embeds */}
+        {mediaUrls.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {mediaUrls.map((url, index) => {
+              const parsed = parseMediaUrl(url);
+              if (!parsed) return null;
+
+              return (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    background: "var(--paper-color)",
+                  }}
+                >
+                  <div style={{ padding: "0.75rem", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.02)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                        {parsed.type === "apple-music" ? "🍎 Apple Music" : "🎧 Spotify"}
+                      </span>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: "0.75rem", color: "var(--accent-color)" }}
+                      >
+                        Open in app ↗
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      className="button button-sm button-danger"
+                      onClick={() => handleRemoveMediaUrl(url)}
+                      style={{ padding: "0.25rem 0.75rem" }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <iframe
+                    src={parsed.embedUrl}
+                    width="100%"
+                    height={getMediaEmbedHeight(parsed.type)}
+                    frameBorder="0"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                    style={{ border: 0, display: "block" }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Podcast Episodes Section */}
+      <div style={{ marginBottom: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-color)" }}>
+        <h4 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "0.95rem", fontWeight: 600 }}>
+          🎙️ Podcast Episodes from Library
+        </h4>
 
       {/* Search for episodes */}
       <div style={{ marginBottom: "1.5rem" }}>
@@ -358,6 +510,7 @@ export function BookEpisodeLinks({ bookId }: BookEpisodeLinksProps) {
           No episodes linked yet. Search above to link episodes.
         </p>
       )}
+      </div>
     </div>
   );
 }

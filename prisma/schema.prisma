@@ -190,11 +190,12 @@ model Book {
   previewLink     String?
   infoLink        String?
 
-  readFreeLinks   String[]  @default([])
-  purchaseLinks   Json?
-  goodreadsRating Float?
-  goodreadsReviews Int?
-  externalReviews Json?
+  readFreeLinks      String[]  @default([])
+  purchaseLinks      Json?
+  companionMediaUrls String[]  @default([])  // Apple Music, Spotify, etc. embed URLs
+  goodreadsRating    Float?
+  goodreadsReviews   Int?
+  externalReviews    Json?
 
   // Faceted classification fields
   sourceType      BookSourceType?

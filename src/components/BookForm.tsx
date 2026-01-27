@@ -40,6 +40,7 @@ interface Book {
   infoLink?: string;
   tags: string[];
   readFreeLinks: string[];
+  companionMediaUrls?: string[];
   goodreadsRating?: number;
   goodreadsReviews?: number;
   externalReviews?: ExternalReview[];
@@ -77,6 +78,7 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
     infoLink: "",
     tags: [],
     readFreeLinks: [],
+    companionMediaUrls: [],
     goodreadsRating: undefined,
     goodreadsReviews: undefined,
     externalReviews: [],
@@ -101,6 +103,7 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
     if (book) {
       setFormData({
         ...book,
+        companionMediaUrls: book.companionMediaUrls || [],
         goodreadsRating: book.goodreadsRating ?? undefined,
         goodreadsReviews: book.goodreadsReviews ?? undefined,
         externalReviews: Array.isArray(book.externalReviews) ? book.externalReviews : [],
@@ -126,6 +129,7 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
         infoLink: "",
         tags: [],
         readFreeLinks: [],
+        companionMediaUrls: [],
         goodreadsRating: undefined,
         goodreadsReviews: undefined,
         externalReviews: [],
@@ -140,6 +144,21 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
       });
     }
   }, [book]);
+
+  // Listen for media URL changes from BookEpisodeLinks component
+  useEffect(() => {
+    const handleMediaUrlsChanged = (event: CustomEvent<string[]>) => {
+      setFormData((prev) => ({
+        ...prev,
+        companionMediaUrls: event.detail,
+      }));
+    };
+
+    window.addEventListener("media-urls-changed", handleMediaUrlsChanged as EventListener);
+    return () => {
+      window.removeEventListener("media-urls-changed", handleMediaUrlsChanged as EventListener);
+    };
+  }, []);
 
   const createEmptyReview = (): ExternalReview => ({
     authorUsername: "",
@@ -883,7 +902,10 @@ export function BookForm({ book, onSuccess, onCancel }: BookFormProps) {
 
       {/* Companion Media Section */}
       <div style={{ background: "rgba(156, 39, 176, 0.08)", padding: "1rem", borderRadius: "8px" }}>
-        <BookEpisodeLinks bookId={book?.id} />
+        <BookEpisodeLinks 
+          bookId={book?.id} 
+          companionMediaUrls={formData.companionMediaUrls || []} 
+        />
       </div>
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
