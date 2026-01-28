@@ -12,8 +12,7 @@
     "add-book": "tsx scripts/add-book.ts",
     "delete-book": "tsx scripts/delete-book.ts",
     "search-books": "tsx scripts/search-books.ts",
-    "postinstall": "prisma generate",
-    "vercel-build": "prisma migrate deploy && npm run build"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@astrojs/react": "^4.4.2",
