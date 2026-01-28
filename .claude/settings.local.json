@@ -86,7 +86,13 @@
       "Bash(git remote:*)",
       "Bash(GIT_TRACE=1 GIT_CURL_VERBOSE=1 timeout 15 git push:*)",
       "mcp__plugin_github_github__get_commit",
-      "Bash(npx ts-node:*)"
+      "Bash(npx ts-node:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(if [ -f .env ])",
+      "Bash(then source .env)",
+      "Bash(fi)",
+      "Bash(source:*)",
+      "Bash(node scripts/run-migration.mjs:*)"
     ]
   }
 }
