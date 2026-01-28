@@ -41,3 +41,7 @@ docs/
 
 # claude temp files
 tmpclaude*
+
+# Database migrations (apply directly, don't commit)
+prisma/migrations/
+scripts/run-migration.mjs

@@ -92,7 +92,8 @@
       "Bash(then source .env)",
       "Bash(fi)",
       "Bash(source:*)",
-      "Bash(node scripts/run-migration.mjs:*)"
+      "Bash(node scripts/run-migration.mjs:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

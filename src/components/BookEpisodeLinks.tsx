@@ -35,6 +35,8 @@ export function BookEpisodeLinks({ bookId, companionMediaUrls = [] }: BookEpisod
   const [searchResults, setSearchResults] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
   
   // Media embed states
   const [mediaUrls, setMediaUrls] = useState<string[]>(companionMediaUrls);
@@ -152,6 +154,59 @@ export function BookEpisodeLinks({ bookId, companionMediaUrls = [] }: BookEpisod
     } catch (error) {
       console.error("Error unlinking episode:", error);
       alert("Failed to unlink episode. Please try again.");
+    }
+  };
+
+  const handleAddByUrl = async () => {
+    if (!bookId) {
+      alert("Please save the book first before linking episodes.");
+      return;
+    }
+
+    if (!urlInput.trim()) {
+      alert("Please enter a Spotify or Apple Podcasts URL.");
+      return;
+    }
+
+    setUrlLoading(true);
+    try {
+      // Create episode from URL
+      const createResponse = await fetch("/api/episodes/create-from-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ externalUrl: urlInput.trim() }),
+      });
+
+      if (!createResponse.ok) {
+        const data = await createResponse.json();
+        alert(`Failed to create episode: ${data.error || "Unknown error"}`);
+        return;
+      }
+
+      const { episode } = await createResponse.json();
+
+      // Link episode to book
+      const linkResponse = await fetch(`/api/books/${bookId}/episodes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ episodeId: episode.id }),
+      });
+
+      if (linkResponse.ok) {
+        await fetchLinkedEpisodes();
+        setUrlInput("");
+        alert("Episode linked successfully!");
+      } else {
+        const data = await linkResponse.json();
+        alert(`Failed to link episode: ${data.error || "Unknown error"}`);
+      }
+    } catch (error) {
+      console.error("Error adding episode by URL:", error);
+      alert("Failed to add episode. Please try again.");
+    } finally {
+      setUrlLoading(false);
     }
   };
 
@@ -321,8 +376,74 @@ export function BookEpisodeLinks({ bookId, companionMediaUrls = [] }: BookEpisod
       {/* Podcast Episodes Section */}
       <div style={{ marginBottom: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--border-color)" }}>
         <h4 style={{ marginTop: 0, marginBottom: "0.75rem", fontSize: "0.95rem", fontWeight: 600 }}>
-          🎙️ Podcast Episodes from Library
+          🎙️ Podcast Episodes
         </h4>
+
+      {/* Add by URL */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.85rem",
+            fontWeight: 500,
+            marginBottom: "0.5rem",
+          }}
+        >
+          Add by URL
+        </label>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Input
+            type="url"
+            placeholder="Paste Spotify or Apple Podcasts episode URL..."
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddByUrl();
+              }
+            }}
+            disabled={urlLoading}
+          />
+          <Button type="button" onClick={handleAddByUrl} disabled={urlLoading || !urlInput.trim()}>
+            {urlLoading ? "Adding..." : "Add"}
+          </Button>
+        </div>
+        <p
+          className="muted"
+          style={{ margin: "0.5rem 0 0", fontSize: "0.75rem" }}
+        >
+          Example: open.spotify.com/episode/... or podcasts.apple.com/...
+        </p>
+      </div>
+
+      {/* OR divider */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          margin: "1rem 0",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            height: "1px",
+            background: "var(--border-color)",
+          }}
+        />
+        <span className="muted" style={{ fontSize: "0.75rem" }}>
+          OR SEARCH LIBRARY
+        </span>
+        <div
+          style={{
+            flex: 1,
+            height: "1px",
+            background: "var(--border-color)",
+          }}
+        />
+      </div>
 
       {/* Search for episodes */}
       <div style={{ marginBottom: "1.5rem" }}>
