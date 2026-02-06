@@ -24,10 +24,21 @@ npm run build            # Build for production
 npm run preview          # Preview production build
 
 # Database
-npx prisma migrate dev   # Create and apply new migration
+# IMPORTANT: Local .env has DATABASE_URL_UNPOOLED but prisma.config.ts expects DATABASE_URL.
+# For local Prisma commands, export DATABASE_URL from DATABASE_URL_UNPOOLED first:
+#   export DATABASE_URL="$DATABASE_URL_UNPOOLED"
+# Or pass it inline:
+#   DATABASE_URL="$DATABASE_URL_UNPOOLED" npx prisma ...
+
+npx prisma migrate dev   # Create and apply new migration (creates migration SQL files in prisma/migrations/)
 npx prisma generate      # Regenerate Prisma Client after schema changes
 npx prisma studio        # Open database GUI
 npx prisma migrate status # Check migration status
+
+# Schema-only changes (NO migration files committed to git):
+npx prisma db push       # Push schema.prisma directly to database without creating migration files
+                         # Use this when you want to avoid committing migration SQL to the repository
+                         # You may need --accept-data-loss flag for additive changes with constraints
 
 # Admin utilities
 npm run create-admin     # Create admin user account (see scripts/create-admin.ts)
