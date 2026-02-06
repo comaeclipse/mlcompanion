@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { prisma } from "../../../lib/prisma";
 import { requireAuth } from "../../../lib/auth-utils";
+import { parseYouTubeUrl } from "../../../lib/video-utils";
 
 export const GET: APIRoute = async ({ params }) => {
   const video = await prisma.video.findUnique({
@@ -58,6 +59,7 @@ export const PUT: APIRoute = async (context) => {
       title: body.title,
       description: body.description,
       url: body.url,
+      youtubeId: body.url ? parseYouTubeUrl(body.url) : undefined,
       thumbnailUrl: body.thumbnailUrl,
       channelName: body.channelName,
       channelId: body.channelId !== undefined ? body.channelId : undefined,

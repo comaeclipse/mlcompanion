@@ -48,13 +48,13 @@ export const POST: APIRoute = async (context) => {
     });
   }
 
+  // Extract YouTube video ID for indexed lookup
+  const youtubeId = parseYouTubeUrl(url);
+
   // Use provided thumbnail from metadata API, or fallback to generating one
   let thumbnailUrl = providedThumbnail;
-  if (!thumbnailUrl) {
-    const youtubeId = parseYouTubeUrl(url);
-    if (youtubeId) {
-      thumbnailUrl = getYouTubeThumbnail(youtubeId);
-    }
+  if (!thumbnailUrl && youtubeId) {
+    thumbnailUrl = getYouTubeThumbnail(youtubeId);
   }
 
   const video = await prisma.video.create({
@@ -62,6 +62,7 @@ export const POST: APIRoute = async (context) => {
       title,
       description: description || "",
       url,
+      youtubeId,
       thumbnailUrl,
       channelName,
       channelId: channelId || null,

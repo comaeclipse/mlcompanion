@@ -12,11 +12,11 @@ if (!id || !/^[\w-]{10,12}$/.test(id)) {
   return Astro.redirect("/videos");
 }
 
-// Find video in database by matching URL substring
+// Find video in database by YouTube video ID (indexed unique column)
 const video = await prisma.video.findFirst({
   where: {
     isPublished: true,
-    url: { contains: id },
+    youtubeId: id,
   },
   include: {
     channel: true,

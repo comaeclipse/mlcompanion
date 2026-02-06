@@ -116,6 +116,7 @@ model Video {
   title        String
   description  String   @db.Text
   url          String
+  youtubeId    String?  @unique
   thumbnailUrl String?
   duration     String?
   channelName  String?  // Deprecated: kept for backwards compatibility
